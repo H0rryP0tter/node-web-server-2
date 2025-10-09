@@ -2,6 +2,8 @@ const express = require('express');
 const hbs = require('hbs'); //access to handlebars view engine
 const fs = require('fs');
 
+const PORT = process.env.PORT || 3000;
+
 // App created
 let app = express();
 
@@ -63,5 +65,5 @@ app.get('/bad', (req,res) => {
 });
 
 // Server listening started
-app.listen(3000, () => console.log('Server is up on port 3000'));
+app.listen(PORT, () => console.log(`Server is up on port ${PORT}`));
 
