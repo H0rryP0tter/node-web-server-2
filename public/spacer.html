@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacer Volume Calculation</title>
+    <style>
+        .noDisplay {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Simple chemical calculation for spacer</h1>
+    <form action="">
+        <table border="1" cellspacing="0" cellpadding="6">
+            <caption><strong>Fluid Properties</strong></caption>
+
+            <tr>
+                <th><label for="fluidName">Fluid Name:</label></th>
+                <td><input type="text" name="fluidName" id="fluidName" value="Spacer" disabled></td>
+            </tr>
+
+            <tr>
+                <th><label for="density">Density:</label></th>
+                <td>
+                    <input type="text" name="density" id="density">
+                    <label for="unitDensity">SG</label>
+                </td>
+            </tr>
+
+            <tr>
+                <th><label for="mixFluid">Mix Fluid Concentration:</label></th>
+                <td>
+                    <input type="text" name="mixFluid" id="mixFluid">
+                    <label for="unitMixFluid">L/m³</label>
+                </td>
+            </tr>
+
+            <tr>
+                <th><label for="mixWater">Mix Water Concentration:</label></th>
+                <td>
+                    <input type="text" name="mixWater" id="mixWater">
+                    <label for="unitMixWater">L/m³</label>
+                </td>
+            </tr>
+
+            <tr>
+                <th><label for="solidsVolFraction">Solids Vol. Fraction:</label></th>
+                <td>
+                    <input type="text" name="solidsVolFraction" id="solidsVolFraction">
+                    <label for="unitSolidsVolFraction">%</label>
+                </td>
+            </tr>
+
+            <tr>
+                <th><label for="freshWater">Fresh Water Concentration:</label></th>
+                <td>
+                    <input type="text" name="freshWater" id="freshWater">
+                    <label for="unitFreshWater">L/m³</label>
+                </td>
+            </tr>
+
+        </table>
+        <br>
+        <table border="1" cellspacing="0" cellpadding="6">
+            <caption><strong>Fluid Chemical Details</strong></caption>
+
+            <tr>
+                <th>Chemical Code</th>
+                <th>Chemical Name</th>
+                <th>Concentration</th>
+                <th>LOT Number</th>
+            </tr>
+
+            <tr>
+                <td>
+                    <label>
+                        <span class="noDisplay">Code #1</span>
+                        <input type="text" name="chemCode1" id="chemCode1" placeholder="Code #1">
+                    </label>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #1 Name</span>
+                        <input type="text" name="chemName1" id="chemName1" placeholder="Chemical #1 Name">
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <input type="text" name="chemConc1" id="chemConc1" placeholder="1.0">L/m³
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #1 LOT</span>
+                        <input type="text" name="lotNumber1" id="lotNumber1" placeholder="LOT #1">
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>
+                        <span class="noDisplay">Code #2</span>
+                        <input type="text" name="chemCode2" id="chemCode2" placeholder="Code #2">
+                    </label>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #2 Name</span>
+                        <input type="text" name="chemName2" id="chemName2" placeholder="Chemical #2 Name">
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <input type="text" name="chemConc2" id="chemConc2" placeholder="1.0">L/m³
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #2 LOT</span>
+                        <input type="text" name="lotNumber2" id="lotNumber2" placeholder="LOT #2">
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>
+                        <span class="noDisplay">Code #3</span>
+                        <input type="text" name="chemCode3" id="chemCode3" placeholder="Code #3">
+                    </label>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #3 Name</span>
+                        <input type="text" name="chemName3" id="chemName3" placeholder="Chemical #3 Name">
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <input type="text" name="chemConc3" id="chemConc3" placeholder="1.0">L/m³
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #3 LOT</span>
+                        <input type="text" name="lotNumber3" id="lotNumber3" placeholder="LOT #3">
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>
+                        <span class="noDisplay">Code #4</span>
+                        <input type="text" name="chemCode4" id="chemCode4" placeholder="Code #4">
+                    </label>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #4 Name</span>
+                        <input type="text" name="chemName4" id="chemName4" placeholder="Chemical #4 Name">
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <input type="text" name="chemConc4" id="chemConc4" placeholder="1.0">L/m³
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Chemical #4 LOT</span>
+                        <input type="text" name="lotNumber4" id="lotNumber4" placeholder="LOT #4">
+                    </label>
+                </td>
+            </tr>
+
+        </table>
+        <br>
+        <table border="1" cellspacing="0" cellpadding="6">
+            <caption><strong>Field Mixing</strong></caption>
+
+            <tr>
+                <th><label for="reqVolSpacer">Required volume of Spacer</label></th>
+                <td>
+                    <input type="text" name="reqVolSpacer" id="reqVolSpacer">
+                    <label for="unitReqVolSpacer">M³</label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="deadVolPit">Dead Volume of Pit</label></th>
+                <td>
+                    <input type="text" name="deadVolPit" id="deadVolPit">
+                    <label for="unitDeadVolPit">M³</label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="totalVolSpacer">Total Volume of Spacer</label></th>
+                <td>
+                    <input type="text" name="totalVolSpacer" id="totalVolSpacer">
+                    <label for="unitTotalVolSpacer">M³</label>
+                </td>
+            </tr>
+        </table>
+        <br>
+        <table border="1" cellspacing="0" cellpadding="6">
+            <caption><strong>Field Quantities of Water & Chemicals</strong></caption>
+
+            <tr>
+                <th><label for="qtyFreshWater">Fresh Water</label></th>
+                <td>
+                    <input type="text" name="qtyFreshWater" id="qtyFreshWater">
+                    <label for="unitQtyFreshWater">M³</label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="qtyChem1">Chemical #1</label></th>
+                <td>
+                    <input type="text" name="qtyChem1" id="qtyChem1">
+                    <label for="unitQtyChem1">Litres</label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="qtyChem2">Chemical #2</label></th>
+                <td>
+                    <input type="text" name="qtyChem2" id="qtyChem2">
+                    <label for="unitQtyChem2">Litres</label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="qtyChem3">Chemical #3</label></th>
+                <td>
+                    <input type="text" name="qtyChem3" id="qtyChem3">
+                    <label for="unitQtyChem3">Kg</label>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="qtyChem4">Chemical #4</label></th>
+                <td>
+                    <input type="text" name="qtyChem4" id="qtyChem4">
+                    <label for="unitQtyChem4">Kg</label>
+                </td>
+            </tr>
+        </table>
+    </form>
+</body>
+
+</html>
