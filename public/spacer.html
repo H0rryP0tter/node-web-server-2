@@ -13,6 +13,8 @@
 </head>
 
 <body>
+    <p><a href="/">Go to Home Page</a></p>
+    <br>
     <h1>Simple chemical calculation for spacer</h1>
     <form action="">
         <table border="1" cellspacing="0" cellpadding="6">
@@ -20,13 +22,13 @@
 
             <tr>
                 <th><label for="fluidName">Fluid Name:</label></th>
-                <td><input type="text" name="fluidName" id="fluidName" value="Spacer" disabled></td>
+                <td><input type="text" name="fluidName" id="fluidName" value="Spacer" class="fluidData" disabled></td>
             </tr>
 
             <tr>
                 <th><label for="density">Density:</label></th>
                 <td>
-                    <input type="text" name="density" id="density">
+                    <input type="text" name="density" id="density" class="fluidData">
                     <span>SG</span>
                 </td>
             </tr>
@@ -34,7 +36,7 @@
             <tr>
                 <th><label for="mixFluid">Mix Fluid Concentration:</label></th>
                 <td>
-                    <input type="text" name="mixFluid" id="mixFluid">
+                    <input type="text" name="mixFluid" id="mixFluid" class="fluidData">
                     <span>L/m³</span>
                 </td>
             </tr>
@@ -42,7 +44,7 @@
             <tr>
                 <th><label for="mixWater">Mix Water Concentration:</label></th>
                 <td>
-                    <input type="text" name="mixWater" id="mixWater">
+                    <input type="text" name="mixWater" id="mixWater" class="fluidData">
                     <span>L/m³</span>
                 </td>
             </tr>
@@ -50,7 +52,7 @@
             <tr>
                 <th><label for="solidsVolFraction">Solids Vol. Fraction:</label></th>
                 <td>
-                    <input type="text" name="solidsVolFraction" id="solidsVolFraction">
+                    <input type="text" name="solidsVolFraction" id="solidsVolFraction" class="fluidData">
                     <span>%</span>
                 </td>
             </tr>
@@ -58,7 +60,7 @@
             <tr>
                 <th><label for="freshWater">Fresh Water Concentration:</label></th>
                 <td>
-                    <input type="text" name="freshWater" id="freshWater">
+                    <input type="text" name="freshWater" id="freshWater" class="fluidData">
                     <span>L/m³</span>
                 </td>
             </tr>
@@ -174,7 +176,7 @@
             </tr>
 
         </table>
-        
+
         <br>
         <table border="1" cellspacing="0" cellpadding="6">
             <caption><strong>Field Mixing</strong></caption>
@@ -244,8 +246,18 @@
         </table>
     </form>
     <script>
+        function getFluidData() {
+            const inputs = document.querySelectorAll('.fluidData');
+            const fluidData = {};
 
+            inputs.forEach(input => {
+                fluidData[input.name] = input.value;
+            });
+
+            console.log(fluidData);
+        }
     </script>
+
 </body>
 
 </html>
