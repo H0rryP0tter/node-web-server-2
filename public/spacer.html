@@ -9,6 +9,18 @@
         .noDisplay {
             display: none;
         }
+
+        .visually-hidden {
+            position: absolute !important;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
     </style>
 </head>
 
@@ -17,34 +29,34 @@
     <br>
     <h1>Simple chemical calculation for spacer</h1>
     <form action="">
-        <table border="1" cellspacing="0" cellpadding="6">
+        <table id="table1" border="1" cellspacing="0" cellpadding="6">
             <caption><strong>Fluid Properties</strong></caption>
 
             <tr>
                 <th><label for="fluidName">Fluid Name:</label></th>
-                <td><input type="text" name="fluidName" id="fluidName" value="Spacer" class="fluidData" disabled></td>
+                <td><input type="text" name="fluidName" id="fluidName" value="Spacer" disabled></td>
             </tr>
 
             <tr>
-                <th><label for="density">Density:</label></th>
+                <th><label for="fluidDensity">Density:</label></th>
                 <td>
-                    <input type="text" name="density" id="density" class="fluidData">
+                    <input type="text" name="fluidDensity" id="fluidDensity">
                     <span>SG</span>
                 </td>
             </tr>
 
             <tr>
-                <th><label for="mixFluid">Mix Fluid Concentration:</label></th>
+                <th><label for="mixFluidConc">Mix Fluid Concentration:</label></th>
                 <td>
-                    <input type="text" name="mixFluid" id="mixFluid" class="fluidData">
+                    <input type="text" name="mixFluidConc" id="mixFluidConc">
                     <span>L/m³</span>
                 </td>
             </tr>
 
             <tr>
-                <th><label for="mixWater">Mix Water Concentration:</label></th>
+                <th><label for="mixWaterConc">Mix Water Concentration:</label></th>
                 <td>
-                    <input type="text" name="mixWater" id="mixWater" class="fluidData">
+                    <input type="text" name="mixWaterConc" id="mixWaterConc">
                     <span>L/m³</span>
                 </td>
             </tr>
@@ -52,166 +64,221 @@
             <tr>
                 <th><label for="solidsVolFraction">Solids Vol. Fraction:</label></th>
                 <td>
-                    <input type="text" name="solidsVolFraction" id="solidsVolFraction" class="fluidData">
+                    <input type="text" name="solidsVolFraction" id="solidsVolFraction">
                     <span>%</span>
                 </td>
             </tr>
-
-            <tr>
-                <th><label for="freshWater">Fresh Water Concentration:</label></th>
-                <td>
-                    <input type="text" name="freshWater" id="freshWater" class="fluidData">
-                    <span>L/m³</span>
-                </td>
-            </tr>
-
         </table>
 
         <br>
-        <table border="1" cellspacing="0" cellpadding="6">
+        <table id="table2" border="1" cellspacing="0" cellpadding="6">
             <caption><strong>Fluid Chemical Details</strong></caption>
-
             <tr>
                 <th>Chemical Code</th>
                 <th>Chemical Name</th>
+                <th id="colPhase">Phase</th> <!-- give the header an id -->
                 <th>Concentration</th>
                 <th>LOT Number</th>
             </tr>
 
+            <!-- Row 1 -->
             <tr>
+                <td><label><input type="text" name="chemCode1" id="chemCode1" placeholder="Code #1"></label></td>
+                <td><label><input type="text" name="chemName1" id="chemName1" placeholder="Chemical #1 Name"></label>
+                </td>
+
+                <td>
+                    <!-- ✅ accessible name via label + header association -->
+                    <label for="chemPhase1" class="visually-hidden">Phase</label>
+                    <select name="chemPhase1" id="chemPhase1" aria-labelledby="colPhase" title="Phase">
+                        <option value="liquid" selected>Liquid</option>
+                        <option value="solid">Solid</option>
+                    </select>
+                </td>
+
                 <td>
                     <label>
-                        <span class="noDisplay">Code #1</span>
-                        <input type="text" name="chemCode1" id="chemCode1" placeholder="Code #1">
-                    </label>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #1 Name</span>
-                        <input type="text" name="chemName1" id="chemName1" placeholder="Chemical #1 Name">
+                        <input type="text" name="chemConc1" id="chemConc1" placeholder="1.0">
+                        <span class="conc-unit">L/m³</span> <!-- was plain text; now wrapped -->
                     </label>
                 </td>
-                <td>
-                    <label>
-                        <input type="text" name="chemConc1" id="chemConc1" placeholder="1.0">L/m³
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #1 LOT</span>
-                        <input type="text" name="lotNumber1" id="lotNumber1" placeholder="LOT #1">
-                    </label>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <label>
-                        <span class="noDisplay">Code #2</span>
-                        <input type="text" name="chemCode2" id="chemCode2" placeholder="Code #2">
-                    </label>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #2 Name</span>
-                        <input type="text" name="chemName2" id="chemName2" placeholder="Chemical #2 Name">
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <input type="text" name="chemConc2" id="chemConc2" placeholder="1.0">L/m³
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #2 LOT</span>
-                        <input type="text" name="lotNumber2" id="lotNumber2" placeholder="LOT #2">
-                    </label>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <label>
-                        <span class="noDisplay">Code #3</span>
-                        <input type="text" name="chemCode3" id="chemCode3" placeholder="Code #3">
-                    </label>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #3 Name</span>
-                        <input type="text" name="chemName3" id="chemName3" placeholder="Chemical #3 Name">
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <input type="text" name="chemConc3" id="chemConc3" placeholder="1.0">L/m³
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #3 LOT</span>
-                        <input type="text" name="lotNumber3" id="lotNumber3" placeholder="LOT #3">
-                    </label>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <label>
-                        <span class="noDisplay">Code #4</span>
-                        <input type="text" name="chemCode4" id="chemCode4" placeholder="Code #4">
-                    </label>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #4 Name</span>
-                        <input type="text" name="chemName4" id="chemName4" placeholder="Chemical #4 Name">
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <input type="text" name="chemConc4" id="chemConc4" placeholder="1.0">L/m³
-                    </label>
-                </td>
-                <td>
-                    <label>
-                        <span class="noDisplay">Chemical #4 LOT</span>
-                        <input type="text" name="lotNumber4" id="lotNumber4" placeholder="LOT #4">
-                    </label>
-                </td>
+                <td><label><input type="text" name="chemLot1" id="chemLot1" placeholder="LOT #1"></label></td>
             </tr>
 
+            <!-- Row 2 -->
+            <tr>
+                <td><label><input type="text" name="chemCode2" id="chemCode2" placeholder="Code #2"></label></td>
+                <td><label><input type="text" name="chemName2" id="chemName2" placeholder="Chemical #2 Name"></label>
+                </td>
+
+                <td>
+                    <label for="chemPhase2" class="visually-hidden">Phase</label>
+                    <select name="chemPhase2" id="chemPhase2" aria-labelledby="colPhase" title="Phase">
+                        <option value="liquid" selected>Liquid</option>
+                        <option value="solid">Solid</option>
+                    </select>
+                </td>
+
+                <td>
+                    <label>
+                        <input type="text" name="chemConc2" id="chemConc2" placeholder="1.0">
+                        <span class="conc-unit">L/m³</span> <!-- was plain text; now wrapped -->
+                    </label>
+                </td>
+                <td><label><input type="text" name="chemLot2" id="chemLot2" placeholder="LOT #2"></label></td>
+            </tr>
+
+            <!-- Row 3 -->
+            <tr>
+                <td><label><input type="text" name="chemCode3" id="chemCode3" placeholder="Code #3"></label></td>
+                <td><label><input type="text" name="chemName3" id="chemName3" placeholder="Chemical #3 Name"></label>
+                </td>
+
+                <td>
+                    <label for="chemPhase3" class="visually-hidden">Phase</label>
+                    <select name="chemPhase3" id="chemPhase3" aria-labelledby="colPhase" title="Phase">
+                        <option value="liquid">Liquid</option>
+                        <option value="solid" selected>Solid</option>
+                    </select>
+                </td>
+
+                <td>
+                    <label>
+                        <input type="text" name="chemConc3" id="chemConc3" placeholder="1.0">
+                        <span class="conc-unit">L/m³</span> <!-- was plain text; now wrapped -->
+                    </label>
+                </td>
+                <td><label><input type="text" name="chemLot3" id="chemLot3" placeholder="LOT #3"></label></td>
+            </tr>
+
+            <!-- Row 4 -->
+            <tr>
+                <td><label><input type="text" name="chemCode4" id="chemCode4" placeholder="Code #4"></label></td>
+                <td><label><input type="text" name="chemName4" id="chemName4" placeholder="Chemical #4 Name"></label>
+                </td>
+
+                <td>
+                    <label for="chemPhase4" class="visually-hidden">Phase</label>
+                    <select name="chemPhase4" id="chemPhase4" aria-labelledby="colPhase" title="Phase">
+                        <option value="liquid">Liquid</option>
+                        <option value="solid" selected>Solid</option>
+                    </select>
+                </td>
+
+                <td>
+                    <label>
+                        <input type="text" name="chemConc4" id="chemConc4" placeholder="1.0">
+                        <span class="conc-unit">L/m³</span> <!-- was plain text; now wrapped -->
+                    </label>
+                </td>
+                <td><label><input type="text" name="chemLot4" id="chemLot4" placeholder="LOT #4"></label></td>
+            </tr>
+        </table>
+        <br>
+
+        <table id="table3" border="1" cellspacing="0" cellpadding="6">
+            <caption><strong>Mixing Water Details</strong></caption>
+
+            <tr>
+                <th>Type of Water</th>
+                <th>Density</th>
+                <th>Concentration</th>
+            </tr>
+
+            <tr>
+                <td>
+                    <label for="waterType">
+                        <span class="visually-hidden">Water Type</span>
+                    </label>
+
+                    <select name="waterType" id="waterType" required title="Water Type">
+                        <option value="" disabled selected>Select fluid type</option>
+                        <option>Drill Water</option>
+                        <option>Sea Water</option>
+                        <option>Brine</option>
+                        <option>Pot Water</option>
+                        <option>Base Oil</option>
+                    </select>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Water Density</span>
+                        <input type="text" name="waterDensity" id="waterDensity" placeholder="1.0">
+                        <span>SG</span>
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Water Concentration</span>
+                        <input type="text" name="waterConc" id="waterConc" placeholder="1000.0">
+                        <span>L/m³</span>
+                    </label>
+                </td>
+            </tr>
         </table>
 
         <br>
-        <table border="1" cellspacing="0" cellpadding="6">
+        <table id="table4" border="1" cellspacing="0" cellpadding="6">
+            <caption><strong>Mixing Pit Details</strong></caption>
+
+            <tr>
+                <th>Pit Name</th>
+                <th>Pit Capacity</th>
+                <th>Pit Dead Volume</th>
+            </tr>
+
+            <tr>
+                <td>
+                    <label for="pitName" class="visually-hidden">Pit Name</label>
+                    <input type="text" name="pitName" id="pitName" placeholder="e.g., Active Pit">
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Pit Capacity</span>
+                        <input type="text" name="pitCapacity" id="pitCapacity" placeholder="e.g., 100">
+                        <span>M³</span>
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <span class="noDisplay">Pit Dead Volume</span>
+                        <input type="text" name="pitDeadVolume" id="pitDeadVolume" placeholder="e.g., 10">
+                        <span>M³</span>
+                    </label>
+                </td>
+            </tr>
+        </table>
+
+        <br>
+        <table id="table5" border="1" cellspacing="0" cellpadding="6">
             <caption><strong>Field Mixing</strong></caption>
+            <tr>
+                <th>Pumpable Volume</th>
+                <th>Total Volume</th>
+            </tr>
+            <tr>
+                <td>
+                    <label for="pumpableVolume" class="visually-hidden">Required Volume</label>
+                    <input type="text" name="pumpableVolume" id="pumpableVolume" placeholder="e.g., 100">
+                    <span>M³</span>
+                </td>
 
-            <tr>
-                <th><label for="reqVolSpacer">Required volume of Spacer</label></th>
                 <td>
-                    <input type="text" name="reqVolSpacer" id="reqVolSpacer">
-                    <span>M³</span>
-                </td>
-            </tr>
-            <tr>
-                <th><label for="deadVolPit">Dead Volume of Pit</label></th>
-                <td>
-                    <input type="text" name="deadVolPit" id="deadVolPit">
-                    <span>M³</span>
-                </td>
-            </tr>
-            <tr>
-                <th><label for="totalVolSpacer">Total Volume of Spacer</label></th>
-                <td>
-                    <input type="text" name="totalVolSpacer" id="totalVolSpacer">
+                    <label for="totalVolume" class="visually-hidden">Total Volume</label>
+                    <input type="text" name="totalVolume" id="totalVolume" placeholder="e.g., 110">
                     <span>M³</span>
                 </td>
             </tr>
         </table>
 
         <br>
-        <table border="1" cellspacing="0" cellpadding="6">
+        <table id="table6" border="1" cellspacing="0" cellpadding="6">
             <caption><strong>Field Quantities of Water & Chemicals</strong></caption>
 
             <tr>
-                <th><label for="qtyFreshWater">Fresh Water</label></th>
+                <th><label for="qtyWater">Water</label></th>
                 <td>
-                    <input type="text" name="qtyFreshWater" id="qtyFreshWater">
+                    <input type="text" name="qtyWater" id="qtyWater">
                     <span>M³</span>
                 </td>
             </tr>
@@ -246,18 +313,317 @@
         </table>
     </form>
     <script>
-        function getFluidData() {
-            const inputs = document.querySelectorAll('.fluidData');
-            const fluidData = {};
+        function initChemPhaseUnitSync() {
+            const table = document.getElementById('table2');
+            if (!table) return;
 
-            inputs.forEach(input => {
-                fluidData[input.name] = input.value;
+            // skip header row
+            const rows = Array.from(table.querySelectorAll('tr')).slice(1);
+
+            rows.forEach(row => {
+                const phaseSel = row.querySelector('select[name^="chemPhase"]');
+                const unitSpan = row.querySelector('.conc-unit');
+
+                const applyUnit = () => {
+                    const phase = (phaseSel?.value || '').toLowerCase();
+                    // Liquid → L/m³ ; Solid → Kg/m³
+                    const unit = phase === 'solid' ? 'Kg/m³' : 'L/m³';
+                    if (unitSpan) unitSpan.textContent = unit;
+                };
+
+                if (phaseSel) {
+                    phaseSel.addEventListener('change', applyUnit);
+                    applyUnit(); // set initial state on load
+                }
+            });
+        }
+        // 1️⃣ Template
+        const FluidDataTemplate = {
+            fluidName: "Spacer",
+            fluidDensity: "",
+            mixFluidConc: "",
+            mixWaterConc: "",
+            solidsVolFraction: "",
+            waterData: {},
+            chemData: []
+        };
+
+        // 2️⃣ Function: extract + assign waterData & chemData
+        function getFluidData() {
+            const fluidData = { ...FluidDataTemplate };
+            const table = document.getElementById("table1");
+            if (!table) return fluidData;
+
+            // Skip header row
+            const rows = table.querySelectorAll("tr:not(:first-child)");
+
+            rows.forEach(row => {
+                const input = row.querySelector("input");
+                if (!input) return;
+
+                const key = input.name;
+                if (key in fluidData) {
+                    fluidData[key] = input.value || "";
+                }
             });
 
-            console.log(fluidData);
+            // 🔗 Attach waterData and chemData
+            fluidData.waterData = getWaterData();
+            fluidData.chemData = collectChemicals();
+
+            console.log("fluidData:", fluidData);
+            return fluidData;
         }
-        getFluidData();
-        console.log('reached here');
+
+        // Prototype / shape
+        const chemDataTemplate = {
+            chemCode: "",
+            chemName: "",
+            chemConc: "",
+            chemLot: "",
+            chemPhase: "",   // "liquid" | "solid"
+            chemUnit: ""     // "L/m³" or "Kg/m³" (derived from phase)
+        };
+
+        function collectChemicals() {
+            const table = document.getElementById("table2");
+            const rows = Array.from(table.querySelectorAll("tr")).slice(1); // skip header
+
+            const chemsArray = [];
+
+            for (const row of rows) {
+                const getVal = sel => row.querySelector(sel)?.value?.trim() || "";
+
+                const phaseSel = row.querySelector('select[name^="chemPhase"]');
+                const chemPhase = (phaseSel?.value || "").toLowerCase(); // "liquid" | "solid" | ""
+
+                // derive unit from phase; fallback: infer from visible text in concentration cell
+                let chemUnit = (chemPhase === "solid") ? "Kg/m³" :
+                    (chemPhase === "liquid") ? "L/m³" : "";
+
+                if (!chemUnit) {
+                    const concCellText = row.querySelector('input[name^="chemConc"]')?.closest("td")?.textContent || "";
+                    if (/\bkg\/m³\b/i.test(concCellText)) chemUnit = "Kg/m³";
+                    else if (/\bl\/m³\b/i.test(concCellText)) chemUnit = "L/m³";
+                }
+
+                const chem = {
+                    ...chemDataTemplate,
+                    chemCode: getVal('input[name^="chemCode"]'),
+                    chemName: getVal('input[name^="chemName"]'),
+                    chemConc: getVal('input[name^="chemConc"]'),
+                    chemLot: getVal('input[name^="chemLot"]'),
+                    chemPhase,
+                    chemUnit
+                };
+
+                const allEmpty = !chem.chemCode && !chem.chemName && !chem.chemConc && !chem.chemLot && !chem.chemPhase;
+                if (!allEmpty) chemsArray.push(chem);
+            }
+            return chemsArray;
+        }
+
+        // Define a template object for structure
+        const WaterDataTemplate = {
+            waterType: "",
+            waterDensity: "",
+            waterConc: ""
+        };
+
+        // Function to extract values from table3
+        function getWaterData() {
+            // Clone the template to create a new instance
+            const waterData = { ...WaterDataTemplate };
+
+            // Reference to the table
+            const table = document.getElementById("table3");
+
+            // Ignore header row -> select all rows except first
+            const rows = table.querySelectorAll("tr:not(:first-child)");
+
+            // Loop over data rows
+            rows.forEach(row => {
+                // Get input/select elements from the current row
+                const select = row.querySelector('select[name="waterType"]');
+                const density = row.querySelector('input[name="waterDensity"]');
+                const conc = row.querySelector('input[name="waterConc"]');
+
+                // Populate object
+                waterData.waterType = select ? select.value : "";
+                waterData.waterDensity = density ? density.value : "";
+                waterData.waterConc = conc ? conc.value : "";
+            });
+
+            // console.log("Water Data Object:", waterData);
+            return waterData;
+        }
+
+        // Define the object template
+        const PitDataTemplate = {
+            pitName: "",
+            pitCapacity: "",
+            pitDeadVolume: ""
+        };
+
+        // Function to extract values from table4
+        function getPitData() {
+            // Clone template into a new object instance
+            const pitData = { ...PitDataTemplate };
+
+            // Get the table
+            const table = document.getElementById("table4");
+            if (!table) {
+                console.error("Table 'table4' not found.");
+                return pitData;
+            }
+
+            // Ignore header row, select only data rows
+            const rows = table.querySelectorAll("tr:not(:first-child)");
+
+            rows.forEach(row => {
+                const pitNameInput = row.querySelector('input[name="pitName"]');
+                const pitCapacityInput = row.querySelector('input[name="pitCapacity"]');
+                const pitDeadVolInput = row.querySelector('input[name="pitDeadVolume"]');
+
+                // Populate values
+                pitData.pitName = pitNameInput ? pitNameInput.value : "";
+                pitData.pitCapacity = pitCapacityInput ? pitCapacityInput.value : "";
+                pitData.pitDeadVolume = pitDeadVolInput ? pitDeadVolInput.value : "";
+            });
+
+            // console.log("pitData:", pitData);
+            return pitData;
+        }
+
+        // 1️⃣ Define the template
+        const FieldMixingDataTemplate = {
+            fluidName: "",
+            pumpableVolume: "",
+            totalVolume: "",
+            waterData: {
+                waterType: "",
+                waterVolume: ""
+            },
+            chemData: [] // array of {chemCode, chemName, chemQuantity}
+        };
+
+        // 2️⃣ Function to extract values from table5 and table6
+        function getFieldMixingData() {
+            // Deep clone template (fallback for older environments)
+            const fieldMixingData = (typeof structuredClone === "function")
+                ? structuredClone(FieldMixingDataTemplate)
+                : JSON.parse(JSON.stringify(FieldMixingDataTemplate));
+
+            // --- Reuse existing collected data objects ---
+            const fluidData = getFluidData();   // from table1 (already collected)
+            const waterInfo = getWaterData();   // from table3 { waterType, waterDensity, waterConc }
+            const pitData = getPitData();     // from table4 { pitName, pitCapacity, pitDeadVolume }
+
+            // 1) Fluid name from stored object
+            fieldMixingData.fluidName = fluidData?.fluidName || "";
+
+            // 2) Table5: pumpable + total
+            const table5 = document.getElementById("table5");
+            let pumpable = 0, total = 0;
+
+            if (table5) {
+                const pumpableInput = table5.querySelector('input[name="pumpableVolume"]');
+                const totalInput = table5.querySelector('input[name="totalVolume"]');
+
+                pumpable = parseFloat(pumpableInput?.value ?? "") || 0;
+                const deadVol = parseFloat(pitData?.pitDeadVolume ?? "") || 0;
+
+                total = pumpable + deadVol;
+
+                fieldMixingData.pumpableVolume = pumpable ? pumpable.toString() : "";
+                fieldMixingData.totalVolume = total ? total.toFixed(2) : "";
+
+                // reflect computed total back into UI
+                if (totalInput) totalInput.value = fieldMixingData.totalVolume;
+            }
+
+            // 3) Table6: water & chemicals
+            const table6 = document.getElementById("table6");
+            if (table6) {
+
+                // ✅ Declare and define waterInput here
+                const waterInput = table6.querySelector(
+                    'input[name="qtyWater"], #qtyWater, input[name="qtyFreshWater"], #qtyFreshWater'
+                );
+
+                // --- Water volume calculation (with unit conversion) ---
+                const waterConc = parseFloat(waterInfo?.waterConc ?? "") || 0;   // L/m³
+                const totalVol = parseFloat(fieldMixingData.totalVolume || "0") || 0; // m³
+
+                // result in Litres
+                let waterVolLitres = waterConc * totalVol;
+
+                // convert to cubic metres
+                let waterVolM3 = waterVolLitres / 1000;
+
+                fieldMixingData.waterData = {
+                    waterType: waterInfo?.waterType || "",
+                    waterVolume: waterVolM3 ? waterVolM3.toFixed(3) : ""  // show in m³
+                };
+
+                // update input field text (and unit)
+                if (waterInput) {
+                    waterInput.value = fieldMixingData.waterData.waterVolume;
+                    const unitSpan = waterInput.parentElement?.querySelector("span");
+                    if (unitSpan) unitSpan.textContent = "M³";
+                }
+
+                // --- Chemical quantities (phase-aware) ---
+                const chemQtyInputs = Array.from(table6.querySelectorAll("tr"))
+                    .slice(1) // skip Water row (first row in table6)
+                    .map(row => row.querySelector("input"));
+
+                const chemList = collectChemicals(); // now includes chemPhase and chemUnit
+                // const totalVol = parseFloat(fieldMixingData.totalVolume || "0") || 0;
+
+                fieldMixingData.chemData = chemQtyInputs.map((inputEl, i) => {
+                    const chem = chemList[i] || {};
+                    const conc = parseFloat(chem.chemConc ?? "") || 0;
+
+                    // quantity = conc * totalVolume
+                    const qty = conc * totalVol;
+                    const qtyStr = qty ? qty.toFixed(2) : "";
+
+                    // reflect computed quantity back to UI
+                    if (inputEl) inputEl.value = qtyStr;
+
+                    // also adjust the visible unit text beside the input in table6
+                    const unitSpan = inputEl?.parentElement?.querySelector("span");
+                    if (unitSpan) {
+                        unitSpan.textContent = (chem.chemPhase === "solid") ? "Kg" : "Litres";
+                    }
+
+                    return {
+                        chemCode: chem.chemCode || `CH${i + 1}`,
+                        chemName: chem.chemName || `Chemical #${i + 1}`,
+                        chemQuantity: qtyStr,                                   // numeric string
+                        chemQuantityUnit: (chem.chemPhase === "solid") ? "Kg" : "L",// output unit
+                        chemPhase: chem.chemPhase || "",                     // "liquid"|"solid"
+                        chemUnit: chem.chemUnit || ""                       // "L/m³"|"Kg/m³" for conc
+                    };
+                });
+            }
+
+            console.log("Field Mixing Data:", fieldMixingData);
+            return fieldMixingData;
+        }
+
+        // Adding Listeners
+        // run after DOM built
+        document.addEventListener('DOMContentLoaded', initChemPhaseUnitSync);
+        document.addEventListener("change", getFieldMixingData);
+
+
+        // Example trigger: run after user selects or fills data
+        // document.addEventListener("change", getFluidData);
+        // document.addEventListener("change", getWaterData);
+        // document.addEventListener("change", collectChemicals);
+        // document.addEventListener("change", getPitData);
     </script>
 
 </body>
