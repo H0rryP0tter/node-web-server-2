@@ -1,635 +1,730 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Spacer Volume Calculation</title>
   <style>
-    /* ===== Spartan CSS (function > looks) ===== */
-    .noDisplay {
-      display: none
+    .noDisplay{display:none}
+    .visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;padding:0;margin:-1px}
+    table{border-collapse:collapse;margin:10px 0;width:auto}
+    th,td{border:1px solid #888;padding:6px;vertical-align:middle;text-align:left;white-space:nowrap}
+    caption{font-weight:bold;text-align:left;margin-bottom:4px}
+    input[type="number"]{width:12ch;max-width:100%;padding:4px}
+    input[type="text"]{width:18ch;max-width:100%;padding:4px}
+    select.unit{width:12ch;max-width:100%;padding:4px}
+    .w-code{width:14ch}.w-name{width:26ch}.w-lot{width:18ch}.w-num{width:12ch}
+    .ctrlCol{width:42px;text-align:center}
+    .btn{width:26px;height:26px;line-height:1;border:1px solid #666;background:#f3f3f3;cursor:pointer}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+
+    #kpiList{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:max-content;max-width:100%}
+    .kpi-row{display:flex;align-items:center;gap:12px;border:1px dashed #aaa;padding:6px;width:max-content}
+    .kpi-left{min-width:12em}
+    .kpi-right{display:inline-flex;gap:8px;align-items:center}
+    .kpi-val{font-family:ui-monospace,Consolas,monospace}
+    .invalid{outline:2px solid #e11;background:#ffecec}
+
+    /* input width normalization */
+    input[type="text"],input[type="number"],select{max-width:160px;width:auto}
+    .unit-picker,[id*="Conc"],[id*="Density"],[id*="SG"]{max-width:110px}
+    [id*="Name"],[id*="Type"]{max-width:180px}
+    table input,table select{width:100%;max-width:inherit}
+    .unit-label{white-space:nowrap;padding:0 4px}
+
+    /* ===== Layout with right sidebar ===== */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 1000px){
+      .layout { grid-template-columns: 1fr; }
+      .errors-panel { position: static; top: auto; }
     }
 
-    .visually-hidden {
-      position: absolute !important;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-      padding: 0;
-      margin: -1px
+    /* sticky, compact error panel */
+    .errors-panel {
+      position: sticky;
+      top: 12px;
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      background: #fffdf7;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+      border-radius: 6px;
+      min-height: 120px;
     }
+    .errors-panel h3 { margin: 0 0 6px; font-size: 1rem; }
+    .err-section { margin: 8px 0; }
+    .err-section h4 { margin: 6px 0; font-size: .95rem; font-weight: 600; }
+    .err-section ul { margin: 0; padding-left: 16px; }
+    .err-section li { margin: 4px 0; }
 
-    /* Keep tables compact (no full-width stretching) */
-    table {
-      border-collapse: collapse;
-      margin: 10px 0;
-      width: auto
-    }
-
-    th,
-    td {
-      border: 1px solid #888;
-      padding: 6px;
-      vertical-align: middle;
-      text-align: left;
-      white-space: nowrap
-    }
-
-    caption {
-      font-weight: bold;
-      text-align: left;
-      margin-bottom: 4px
-    }
-
-    /* Tight, reasonable field widths (left-sided is OK) */
-    input[type="number"] {
-      width: 12ch;
-      max-width: 100%;
-      padding: 4px
-    }
-
-    input[type="text"] {
-      width: 18ch;
-      max-width: 100%;
-      padding: 4px
-    }
-
-    select.unit {
-      width: 12ch;
-      max-width: 100%;
-      padding: 4px
-    }
-
-    /* Specific narrow/wide tweaks */
-    .w-code {
-      width: 14ch
-    }
-
-    .w-name {
-      width: 26ch
-    }
-
-    .w-lot {
-      width: 18ch
-    }
-
-    .w-num {
-      width: 12ch
-    }
-
-    /* Controls column for +/- */
-    .ctrlCol {
-      width: 42px;
-      text-align: center
-    }
-
-    .btn {
-      width: 26px;
-      height: 26px;
-      line-height: 1;
-      border: 1px solid #666;
-      background: #f3f3f3;
-      cursor: pointer
-    }
-
-    .btn[disabled] {
-      opacity: .6;
-      cursor: not-allowed
-    }
-
-    /* Section F: compact, left-aligned KPI list (no full-width rows) */
-    #kpiList {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-      width: max-content;
-      max-width: 100%
-    }
-
-    .kpi-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border: 1px dashed #aaa;
-      padding: 6px;
-      width: max-content
-    }
-
-    .kpi-left {
-      min-width: 12em
-    }
-
-    .kpi-right {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center
-    }
-
-    .kpi-val {
-      font-family: ui-monospace, Consolas, monospace
+    /* inline box under chemicals */
+    .err-inline {
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-left: 3px solid #e5a300;
+      background: #fff7e6;
+      display: none;
+      border-radius: 4px;
     }
   </style>
 </head>
-
 <body>
 
-  <form>
-
-    <!-- ===== A. Fluid Properties ===== -->
-    <table id="tableA" border="1" cellspacing="0" cellpadding="6">
-      <caption>Fluid Properties</caption>
-      <tr>
-        <th><label for="fluidName">Fluid Name</label></th>
-        <td><input type="text" id="fluidName" class="w-name" placeholder="Spacer A" /></td>
-      </tr>
-      <tr>
-        <th><label for="densityVal">Density</label></th>
-        <td>
-          <input type="number" id="densityVal" class="w-num" step="0.0001" placeholder="1.10" />
-          <select id="densityUnit" class="unit" aria-label="Density unit">
-            <option value="sg" selected>SG</option>
-            <option value="kg_m3">kg/m³</option>
-            <option value="g_l">g/L</option>
-            <option value="lb_gal">lb/gal (US)</option>
-            <option value="lb_ft3">lb/ft³</option>
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <th><label for="mixFluidConc">Mix Fluid Concentration</label></th>
-        <td>
-          <input type="number" id="mixFluidConc" class="w-num" step="0.001" placeholder="0" />
-          <select id="mixFluidConcUnit" class="unit" aria-label="Mix fluid concentration unit">
-            <option value="l_m3" selected>L/m³</option>
-            <option value="gal_bbl">gal/bbl</option>
-            <option value="m3_m3">m³/m³</option>
-            <option value="gal_gal">gal/gal</option>
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <th><label for="mixWaterConc">Mix Water Concentration</label></th>
-        <td>
-          <input type="number" id="mixWaterConc" class="w-num" step="0.001" placeholder="0" />
-          <select id="mixWaterConcUnit" class="unit" aria-label="Mix water concentration unit">
-            <option value="l_m3" selected>L/m³</option>
-            <option value="gal_bbl">gal/bbl</option>
-            <option value="m3_m3">m³/m³</option>
-            <option value="gal_gal">gal/gal</option>
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <th><label for="solidsVolFraction">Solids Vol. Fraction</label></th>
-        <td>
-          <input type="number" id="solidsVolFraction" class="w-num" step="0.001" min="0" max="1" placeholder="0.00" />
-          <span class="noDisplay">fraction (0–1)</span>
-        </td>
-      </tr>
-    </table>
-
-    <!-- ===== B. Fluid Chemical Details (dynamic; Row#1 permanent; +/-; Enter-to-add) ===== -->
-    <table id="tableB" border="1" cellspacing="0" cellpadding="6">
-      <caption>Fluid Chemical Details</caption>
-      <thead>
+<div class="layout">
+  <div class="main-col">
+    <form id="spacerForm">
+      <!-- ===== A. Fluid Properties ===== -->
+      <table id="tableA" border="1" cellspacing="0" cellpadding="6">
+        <caption>Fluid Properties</caption>
         <tr>
-          <th class="ctrlCol" aria-label="Row controls"></th>
-          <th>Chemical Code</th>
-          <th>Chemical Name</th>
-          <th id="colPhase">Phase</th>
-          <th>Concentration</th>
-          <th id="colUnitB">Unit</th>
-          <th>LOT Number</th>
+          <th><label for="fluidName">Fluid Name</label></th>
+          <td><input type="text" id="fluidName" class="w-name" placeholder="Spacer A" /></td>
         </tr>
-      </thead>
-      <tbody>
-        <tr data-row="1">
-          <td class="ctrlCol">
-            <button type="button" class="btn btn-plus" aria-label="Add row below">+</button>
-          </td>
-          <td><input type="text" id="chemCode1" class="w-code" placeholder="Code #1" /></td>
-          <td><input type="text" id="chemName1" class="w-name" placeholder="Chemical #1 Name" /></td>
+        <tr>
+          <th><label for="densityVal">Density</label></th>
           <td>
-            <label for="chemPhase1" class="visually-hidden">Phase</label>
-            <select id="chemPhase1" class="unit" aria-labelledby="colPhase" style="width:10ch">
-              <option value="liquid" selected>Liquid</option>
-              <option value="solid">Solid</option>
+            <input type="number" id="densityVal" class="w-num" step="0.0001" placeholder="1.10" />
+            <select id="densityUnit" class="unit" aria-label="Density unit">
+              <option value="sg" selected>SG</option>
+              <option value="kg_m3">kg/m³</option>
+              <option value="g_l">g/L</option>
+              <option value="lb_gal">lb/gal (US)</option>
+              <option value="lb_ft3">lb/ft³</option>
             </select>
           </td>
-          <td><input type="number" id="chemConc1" class="w-num" step="0.001" placeholder="1.0" /></td>
+        </tr>
+        <tr>
+          <th><label for="mixFluidConc">Mix Fluid Concentration</label></th>
           <td>
-            <select id="chemUnit1" class="unit" aria-labelledby="colUnitB" data-phase="liquid">
+            <input type="number" id="mixFluidConc" class="w-num" step="0.001" placeholder="0" />
+            <select id="mixFluidConcUnit" class="unit" aria-label="Mix fluid concentration unit">
               <option value="l_m3" selected>L/m³</option>
               <option value="gal_bbl">gal/bbl</option>
               <option value="m3_m3">m³/m³</option>
               <option value="gal_gal">gal/gal</option>
             </select>
           </td>
-          <td><input type="text" id="chemLot1" class="w-lot" placeholder="LOT #1" /></td>
         </tr>
-      </tbody>
-    </table>
+        <tr>
+          <th><label for="mixWaterConc">Mix Water Concentration</label></th>
+          <td>
+            <input type="number" id="mixWaterConc" class="w-num" step="0.001" placeholder="0" />
+            <select id="mixWaterConcUnit" class="unit" aria-label="Mix water concentration unit">
+              <option value="l_m3" selected>L/m³</option>
+              <option value="gal_bbl">gal/bbl</option>
+              <option value="m3_m3">m³/m³</option>
+              <option value="gal_gal">gal/gal</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="solidsVolPercent">Solids Vol. Fraction (%)</label></th>
+          <td>
+            <input type="number" id="solidsVolPercent" class="w-num" step="0.1" min="0" max="100" placeholder="0.0" />
+            <span class="unit-label">%</span>
+          </td>
+        </tr>
+      </table>
 
-    <!-- ===== C. Mixing Water Details ===== -->
-    <table id="tableC" border="1" cellspacing="0" cellpadding="6">
-      <caption>Mixing Water Details</caption>
-      <tr>
-        <th><label for="waterType">Water Type</label></th>
-        <td><input type="text" id="waterType" class="w-name" placeholder="Drill Water" /></td>
-      </tr>
-      <tr>
-        <th><label for="waterDensityVal">Water Density</label></th>
-        <td>
-          <input type="number" id="waterDensityVal" class="w-num" step="0.0001" placeholder="1.00" />
-          <select id="waterDensityUnit" class="unit" aria-label="Water density unit">
-            <option value="sg" selected>SG</option>
-            <option value="kg_m3">kg/m³</option>
-            <option value="g_l">g/L</option>
-            <option value="lb_gal">lb/gal (US)</option>
-            <option value="lb_ft3">lb/ft³</option>
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <th><label for="waterConc">Water Concentration</label></th>
-        <td>
-          <input type="number" id="waterConc" class="w-num" step="0.001" placeholder="0" />
-          <select id="waterConcUnit" class="unit" aria-label="Water concentration unit">
-            <option value="l_m3" selected>L/m³</option>
-            <option value="gal_bbl">gal/bbl</option>
-            <option value="m3_m3">m³/m³</option>
-            <option value="gal_gal">gal/gal</option>
-          </select>
-        </td>
-      </tr>
-    </table>
+      <!-- ===== B. Fluid Chemical Details (dynamic) ===== -->
+      <table id="tableB" border="1" cellspacing="0" cellpadding="6">
+        <caption>Fluid Chemical Details</caption>
+        <thead>
+          <tr>
+            <th class="ctrlCol" aria-label="Row controls"></th>
+            <th>Chemical Code</th>
+            <th>Chemical Name</th>
+            <th id="colPhase">Phase</th>
+            <th>Concentration</th>
+            <th id="colUnitB">Unit</th>
+            <th>LOT Number</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-row="1">
+            <td class="ctrlCol">
+              <button type="button" class="btn btn-plus" aria-label="Add row below">+</button>
+            </td>
+            <td><input type="text" id="chemCode1" class="w-code" placeholder="Code #1" /></td>
+            <td><input type="text" id="chemName1" class="w-name" placeholder="Chemical #1 Name" /></td>
+            <td>
+              <label for="chemPhase1" class="visually-hidden">Phase</label>
+              <select id="chemPhase1" class="unit" aria-labelledby="colPhase" style="width:10ch">
+                <option value="liquid" selected>Liquid</option>
+                <option value="solid">Solid</option>
+              </select>
+            </td>
+            <td><input type="number" id="chemConc1" class="w-num" step="0.001" placeholder="1.0" /></td>
+            <td>
+              <select id="chemUnit1" class="unit" aria-labelledby="colUnitB" data-phase="liquid">
+                <option value="l_m3" selected>L/m³</option>
+                <option value="gal_bbl">gal/bbl</option>
+                <option value="m3_m3">m³/m³</option>
+                <option value="gal_gal">gal/gal</option>
+              </select>
+            </td>
+            <td><input type="text" id="chemLot1" class="w-lot" placeholder="LOT #1" /></td>
+          </tr>
+        </tbody>
+      </table>
 
-    <!-- ===== D. Mixing Pit Details ===== -->
-    <table id="tableD" border="1" cellspacing="0" cellpadding="6">
-      <caption>Mixing Pit Details</caption>
-      <tr>
-        <th><label for="pitName">Pit Name</label></th>
-        <td><input type="text" id="pitName" class="w-name" placeholder="Main Pit" /></td>
-      </tr>
-      <tr>
-        <th><label for="pitCapacityVal">Pit Capacity</label></th>
-        <td>
-          <input type="number" id="pitCapacityVal" class="w-num" step="0.001" placeholder="10" />
-          <select id="pitCapacityUnit" class="unit" aria-label="Pit capacity unit">
-            <option value="m3" selected>m³</option>
-            <option value="bbl">bbl</option>
-            <option value="gal">gal (US)</option>
-            <option value="L">L</option>
-            <option value="ft3">ft³</option>
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <th><label for="pitDeadVal">Pit Dead Volume</label></th>
-        <td>
-          <input type="number" id="pitDeadVal" class="w-num" step="0.001" placeholder="0.5" />
-          <select id="pitDeadUnit" class="unit" aria-label="Pit dead unit">
-            <option value="m3" selected>m³</option>
-            <option value="bbl">bbl</option>
-            <option value="gal">gal (US)</option>
-            <option value="L">L</option>
-            <option value="ft3">ft³</option>
-          </select>
-        </td>
-      </tr>
-    </table>
+      <!-- inline errors right below the Chemicals table -->
+      <div id="errorsChemInline" class="err-inline" aria-live="polite"></div>
 
-    <!-- ===== E. Field Mixing ===== -->
-    <table id="tableE" border="1" cellspacing="0" cellpadding="6">
-      <caption>Field Mixing</caption>
-      <tr>
-        <th><label for="pumpableVal">Pumpable Volume</label></th>
-        <td>
-          <input type="number" id="pumpableVal" class="w-num" step="0.001" placeholder="9.5" />
-          <select id="pumpableUnit" class="unit" aria-label="Pumpable unit">
-            <option value="m3" selected>m³</option>
-            <option value="bbl">bbl</option>
-            <option value="gal">gal (US)</option>
-            <option value="L">L</option>
-            <option value="ft3">ft³</option>
-          </select>
-        </td>
-      </tr>
-      <tr>
-        <th><label for="totalVal">Total Volume</label></th>
-        <td>
-          <input type="number" id="totalVal" class="w-num" step="0.001" placeholder="10.0" readonly />
-          <select id="totalUnit" class="unit" aria-label="Total unit">
-            <option value="m3" selected>m³</option>
-            <option value="bbl">bbl</option>
-            <option value="gal">gal (US)</option>
-            <option value="L">L</option>
-            <option value="ft3">ft³</option>
-          </select>
-        </td>
-      </tr>
-    </table>
+      <!-- ===== C. Mixing Water Details ===== -->
+      <table id="tableC" border="1" cellspacing="0" cellpadding="6">
+        <caption>Mixing Water Details</caption>
+        <tr>
+          <th><label for="waterType">Water Type</label></th>
+          <td><input type="text" id="waterType" class="w-name" placeholder="Drill Water" /></td>
+        </tr>
+        <tr>
+          <th><label for="waterDensityVal">Water Density</label></th>
+          <td>
+            <input type="number" id="waterDensityVal" class="w-num" step="0.0001" placeholder="1.00" />
+            <select id="waterDensityUnit" class="unit" aria-label="Water density unit">
+              <option value="sg" selected>SG</option>
+              <option value="kg_m3">kg/m³</option>
+              <option value="g_l">g/L</option>
+              <option value="lb_gal">lb/gal (US)</option>
+              <option value="lb_ft3">lb/ft³</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="waterConc">Water Concentration</label></th>
+          <td>
+            <input type="number" id="waterConc" class="w-num" step="0.001" placeholder="0" />
+            <select id="waterConcUnit" class="unit" aria-label="Water concentration unit">
+              <option value="l_m3" selected>L/m³</option>
+              <option value="gal_bbl">gal/bbl</option>
+              <option value="m3_m3">m³/m³</option>
+              <option value="gal_gal">gal/gal</option>
+            </select>
+          </td>
+        </tr>
+      </table>
 
-    <!-- ===== F. Field Quantities (dynamic mirror of B; compact block) ===== -->
-    <table id="tableF" border="1" cellspacing="0" cellpadding="6" style="display:none">
-      <caption>Field Quantities of Water &amp; Chemicals</caption>
-    </table>
+      <!-- ===== D. Mixing Pit Details ===== -->
+      <table id="tableD" border="1" cellspacing="0" cellpadding="6">
+        <caption>Mixing Pit Details</caption>
+        <tr>
+          <th><label for="pitName">Pit Name</label></th>
+          <td><input type="text" id="pitName" class="w-name" placeholder="Main Pit" /></td>
+        </tr>
+        <tr>
+          <th><label for="pitCapacityVal">Pit Capacity</label></th>
+          <td>
+            <input type="number" id="pitCapacityVal" class="w-num" step="0.001" placeholder="10" />
+            <select id="pitCapacityUnit" class="unit" aria-label="Pit capacity unit">
+              <option value="m3" selected>m³</option>
+              <option value="bbl">bbl</option>
+              <option value="gal">gal (US)</option>
+              <option value="L">L</option>
+              <option value="ft3">ft³</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="pitDeadVal">Pit Dead Volume</label></th>
+          <td>
+            <input type="number" id="pitDeadVal" class="w-num" step="0.001" placeholder="0.5" />
+            <select id="pitDeadUnit" class="unit" aria-label="Pit dead unit">
+              <option value="m3" selected>m³</option>
+              <option value="bbl">bbl</option>
+              <option value="gal">gal (US)</option>
+              <option value="L">L</option>
+              <option value="ft3">ft³</option>
+            </select>
+          </td>
+        </tr>
+      </table>
 
-    <div>
-      <label for="outDp">Output decimals:</label>
-      <select id="outDp" class="unit" style="width:6ch">
-        <option value="0">0</option>
-        <option value="1">1</option>
-        <option value="2" selected>2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-      </select>
-    </div>
+      <!-- ===== E. Field Mixing ===== -->
+      <table id="tableE" border="1" cellspacing="0" cellpadding="6">
+        <caption>Field Mixing</caption>
+        <tr>
+          <th><label for="pumpableVal">Pumpable Volume</label></th>
+          <td>
+            <input type="number" id="pumpableVal" class="w-num" step="0.001" placeholder="9.5" />
+            <select id="pumpableUnit" class="unit" aria-label="Pumpable unit">
+              <option value="m3" selected>m³</option>
+              <option value="bbl">bbl</option>
+              <option value="gal">gal (US)</option>
+              <option value="L">L</option>
+              <option value="ft3">ft³</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th><label for="totalVal">Total Volume</label></th>
+          <td>
+            <input type="number" id="totalVal" class="w-num" step="0.001" placeholder="10.0" readonly />
+            <select id="totalUnit" class="unit" aria-label="Total unit">
+              <option value="m3" selected>m³</option>
+              <option value="bbl">bbl</option>
+              <option value="gal">gal (US)</option>
+              <option value="L">L</option>
+              <option value="ft3">ft³</option>
+            </select>
+          </td>
+        </tr>
+      </table>
 
-    <div id="kpiList"></div>
+      <!-- ===== F. Field Quantities (KPI block) ===== -->
+      <table id="tableF" border="1" cellspacing="0" cellpadding="6" style="display:none">
+        <caption>Field Quantities of Water &amp; Chemicals</caption>
+      </table>
 
-  </form>
+      <div>
+        <label for="outDp">Output decimals:</label>
+        <select id="outDp" class="unit" style="width:6ch">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
 
-  <script>
-    /* ===== Units registry (SI backbone) ===== */
-    const U = {
-      volume: { // SI: m3
-        m3: { toSI: v => v, fromSI: v => v },
-        L: { toSI: v => v / 1000, fromSI: v => v * 1000 },
-        gal: { toSI: v => v * 0.003785411784, fromSI: v => v / 0.003785411784 },
-        bbl: { toSI: v => v * 0.158987294928, fromSI: v => v / 0.158987294928 },
-        ft3: { toSI: v => v * 0.028316846592, fromSI: v => v / 0.028316846592 },
-      },
-      mass: { // SI: kg
-        kg: { toSI: v => v, fromSI: v => v },
-        lb: { toSI: v => v * 0.45359237, fromSI: v => v / 0.45359237 },
-        tonne: { toSI: v => v * 1000, fromSI: v => v / 1000 },
-      },
-      density: { // SI: kg/m3
-        sg: { toSI: v => v * 1000, fromSI: v => v / 1000 },
-        kg_m3: { toSI: v => v, fromSI: v => v },
-        g_l: { toSI: v => v, fromSI: v => v }, // 1 g/L == 1 kg/m3
-        lb_gal: { toSI: v => v * 119.8264273, fromSI: v => v / 119.8264273 },
-        lb_ft3: { toSI: v => v * 16.01846337, fromSI: v => v / 16.01846337 },
-      },
-      conc_liq: { // SI: m3/m3
-        l_m3: { toSI: v => v / 1000, fromSI: v => v * 1000 },
-        gal_bbl: { toSI: v => (v * 0.003785411784) / 0.158987294928, fromSI: v => v * 0.158987294928 / 0.003785411784 },
-        m3_m3: { toSI: v => v, fromSI: v => v },
-        gal_gal: { toSI: v => v, fromSI: v => v },
-      },
-      conc_sol: { // SI: kg/m3
-        kg_m3: { toSI: v => v, fromSI: v => v },
-        lb_bbl: { toSI: v => v * 0.45359237 / 0.158987294928, fromSI: v => v * 0.158987294928 / 0.45359237 },
-        lb_ft3: { toSI: v => v * 0.45359237 / 0.028316846592, fromSI: v => v * 0.028316846592 / 0.45359237 },
+      <div id="kpiList"></div>
+    </form>
+  </div>
+
+  <!-- sticky right-side error panel -->
+  <aside id="errorsPanel" class="errors-panel" aria-live="polite">
+    <h3>Validation</h3>
+
+    <section class="err-section" data-sec="A">
+      <h4>Fluid Properties</h4>
+      <ul id="errListA"></ul>
+    </section>
+
+    <section class="err-section" data-sec="C">
+      <h4>Mixing Water</h4>
+      <ul id="errListC"></ul>
+    </section>
+
+    <section class="err-section" data-sec="D">
+      <h4>Pit &amp; Field Mixing</h4>
+      <ul id="errListD"></ul>
+    </section>
+
+    <section class="err-section" data-sec="B">
+      <h4>Chemicals</h4>
+      <ul id="errListB"></ul>
+    </section>
+  </aside>
+</div>
+
+<script>
+  /* ===== Feature flags ===== */
+  const SHOW_ERRORS = true; // turn UI validation display on
+
+  /* ===== Units registry (SI backbone) ===== */
+  const U = {
+    volume:{ // SI: m3
+      m3:{toSI:v=>v,fromSI:v=>v},
+      L:{toSI:v=>v/1000,fromSI:v=>v*1000},
+      gal:{toSI:v=>v*0.003785411784,fromSI:v=>v/0.003785411784},
+      bbl:{toSI:v=>v*0.158987294928,fromSI:v=>v/0.158987294928},
+      ft3:{toSI:v=>v*0.028316846592,fromSI:v=>v/0.028316846592}
+    },
+    mass:{ // SI: kg
+      kg:{toSI:v=>v,fromSI:v=>v},
+      lb:{toSI:v=>v*0.45359237,fromSI:v=>v/0.45359237},
+      tonne:{toSI:v=>v*1000,fromSI:v=>v/1000}
+    },
+    density:{ // SI: kg/m3
+      sg:{toSI:v=>v*1000,fromSI:v=>v/1000},
+      kg_m3:{toSI:v=>v,fromSI:v=>v},
+      g_l:{toSI:v=>v,fromSI:v=>v}, // 1 g/L == 1 kg/m3
+      lb_gal:{toSI:v=>v*119.8264273,fromSI:v=>v/119.8264273},
+      lb_ft3:{toSI:v=>v*16.01846337,fromSI:v=>v/16.01846337}
+    },
+    conc_liq:{ // base: L/m3
+      l_m3:{toBaseLpm3:v=>v, fromBaseLpm3:v=>v},
+      gal_bbl:{toBaseLpm3:v=>v*(3.785411784/0.158987294928), fromBaseLpm3:v=>v/(3.785411784/0.158987294928)},
+      m3_m3:{toBaseLpm3:v=>v*1000, fromBaseLpm3:v=>v/1000},
+      gal_gal:{toBaseLpm3:v=>v*1000/264.17205236, fromBaseLpm3:v=>v/(1000/264.17205236)}
+    },
+    conc_sol:{ // SI: kg/m3
+      kg_m3:{toSI:v=>v,fromSI:v=>v},
+      lb_bbl:{toSI:v=>v*0.45359237/0.158987294928,fromSI:v=>v*0.158987294928/0.45359237},
+      lb_ft3:{toSI:v=>v*0.45359237/0.028316846592,fromSI:v=>v*0.028316846592/0.45359237},
+      lb_gal:{toSI:v=>v*0.45359237/0.003785411784,fromSI:v=>v*0.003785411784/0.45359237},
+      kg_L:{toSI:v=>v*1000,fromSI:v=>v/1000},
+      MT_m3:{toSI:v=>v*1000,fromSI:v=>v/1000}
+    }
+  };
+
+  /* ===== Helpers ===== */
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const num = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; }
+  const fmtDp = v => {
+    const dp = Number($('#outDp')?.value || 2);
+    return Number.isFinite(v) ? (+v).toFixed(dp) : '';
+  };
+
+  /* ===== Remember last unit per phase ===== */
+  window._lastUnitLiquid = 'l_m3';
+  window._lastUnitSolid  = 'kg_m3';
+
+  /* ===== Section B: dynamic rows (+ / – ; Enter to add) ===== */
+  (function initChemRows(){
+    const tbody = $('#tableB tbody');
+    function rows(){ return Array.from(tbody.querySelectorAll('tr')); }
+
+    function reindex(){
+      rows().forEach((tr,i)=>{
+        const n=i+1; tr.dataset.row=n;
+        setId(tr,'chemCode',n); setId(tr,'chemName',n);
+        setId(tr,'chemPhase',n); setId(tr,'chemConc',n);
+        setId(tr,'chemUnit',n);  setId(tr,'chemLot',n);
+
+        let minus = tr.querySelector('.btn-minus');
+        if(!minus){
+          minus=document.createElement('button');
+          minus.type='button'; minus.textContent='-';
+          minus.className='btn btn-minus'; minus.title='Delete row';
+          tr.cells[0].appendChild(minus);
+        }
+        minus.onclick=()=>delRow(tr);
+        minus.style.display=(n===1)?'none':'inline-block';
+
+        const plus = tr.querySelector('.btn-plus'); if(plus) plus.onclick=()=>addBelow(tr);
+
+        syncUnitListToPhase(tr.querySelector('#chemPhase'+n), tr.querySelector('#chemUnit'+n));
+        wireRow(tr);
+      });
+    }
+    function setId(tr,base,nm){ const el=tr.querySelector(`[id^="${base}"]`); if(el) el.id=base+nm; }
+    function addBelow(tr){
+      const clone=tr.cloneNode(true);
+      clone.querySelectorAll('input[type="text"],input[type="number"]').forEach(i=>i.value='');
+      const phaseSel=clone.querySelector('[id^="chemPhase"]');
+      const unitSel =clone.querySelector('[id^="chemUnit"]');
+      if(phaseSel) phaseSel.value='liquid';
+      if(unitSel) unitSel.value=(window._lastUnitLiquid||'l_m3');
+      wireRow(clone);
+      tr.after(clone); reindex(); compute(); validateAll();
+    }
+    function delRow(tr){
+      if(+tr.dataset.row===1) return;
+      tr.remove(); reindex(); compute(); validateAll();
+    }
+    function syncUnitListToPhase(phaseSel,unitSel){
+      if(!phaseSel||!unitSel) return;
+      const phase=phaseSel.value; const prev=unitSel.value;
+      if(phase==='solid'){
+        unitSel.innerHTML=`
+          <option value="kg_m3">kg/m³</option>
+          <option value="lb_bbl">lb/bbl</option>
+          <option value="lb_gal">lb/gal</option>
+          <option value="lb_ft3">lb/ft³</option>
+          <option value="kg_L">kg/L</option>
+          <option value="MT_m3">MT/m³</option>`;
+        unitSel.value=['kg_m3','lb_bbl','lb_gal','lb_ft3','kg_L','MT_m3'].includes(prev)?prev:(window._lastUnitSolid||'kg_m3');
+      }else{
+        unitSel.innerHTML=`
+          <option value="l_m3">L/m³</option>
+          <option value="gal_bbl">gal/bbl</option>
+          <option value="m3_m3">m³/m³</option>
+          <option value="gal_gal">gal/gal</option>`;
+        unitSel.value=['l_m3','gal_bbl','m3_m3','gal_gal'].includes(prev)?prev:(window._lastUnitLiquid||'l_m3');
       }
-    };
+    }
+    function wireRow(tr){
+      tr.querySelectorAll('input,select').forEach(el=>{
+        el.addEventListener('input', e=>{
+          if(e.target.id.startsWith('chemPhase')){
+            const row=e.target.closest('tr');
+            syncUnitListToPhase(row.querySelector('[id^="chemPhase"]'),row.querySelector('[id^="chemUnit"]'));
+          }
+          compute(); validateAll();
+        });
+        el.addEventListener('change', e=>{
+          if(e.target.id.startsWith('chemUnit')){
+            const row=e.target.closest('tr');
+            const phase=row.querySelector('[id^="chemPhase"]')?.value||'liquid';
+            if(phase==='solid') window._lastUnitSolid=e.target.value;
+            else window._lastUnitLiquid=e.target.value;
+          }
+          if(e.target.id.startsWith('chemPhase')){
+            const row=e.target.closest('tr'); const unitSel=row.querySelector('[id^="chemUnit"]');
+            if(row.querySelector('[id^="chemPhase"]').value==='solid') unitSel.value=window._lastUnitSolid;
+            else unitSel.value=window._lastUnitLiquid;
+          }
+          compute(); validateAll();
+        });
+      });
+      const lot=tr.querySelector('[id^="chemLot"]');
+      if(lot && !lot._enterHooked){
+        lot.addEventListener('keydown',e=>{
+          if(e.key==='Enter'){ e.preventDefault(); addBelow(tr);
+            const next=tr.nextElementSibling; if(next){ const first=next.querySelector('[id^="chemCode"]'); if(first) first.focus(); }
+          }
+        });
+        lot._enterHooked=true;
+      }
+    }
+    reindex();
+  })();
 
-    /* ===== Helpers ===== */
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-    const n = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; }
-    function fmtDp(v) {
-      const dpSel = $('#outDp'); const dp = dpSel ? Number(dpSel.value) : 2;
-      return Number.isFinite(v) ? (+v).toFixed(dp) : '';
+  /* ===== Compute with SI backbone & KPI order ===== */
+  function compute(){
+    // totals in m3
+    const pump_m3 = U.volume[$('#pumpableUnit').value].toSI(num($('#pumpableVal').value));
+    const dead_m3 = U.volume[$('#pitDeadUnit').value].toSI(num($('#pitDeadVal').value));
+    const total_m3= pump_m3 + dead_m3;
+    $('#totalVal').value = fmtDp(U.volume[$('#totalUnit').value].fromSI(total_m3));
+
+    // mix fluid total (L/m3 base)
+    const mixFluid_Lpm3 = U.conc_liq[$('#mixFluidConcUnit').value].toBaseLpm3(num($('#mixFluidConc').value));
+    const mixFluid_m3    = (mixFluid_Lpm3 * total_m3) / 1000;
+
+    // water total (label reflects water type)
+    const waterType = ($('#waterType')?.value || '').trim();
+    const waterLabel = waterType ? `${waterType} Total` : 'Water Total';
+    const water_Lpm3 = U.conc_liq[$('#waterConcUnit').value].toBaseLpm3(num($('#waterConc').value));
+    const water_m3   = (water_Lpm3 * total_m3) / 1000;
+
+    const list = $('#kpiList'); list.innerHTML='';
+
+    function addKPI(label, siValue, kind){
+      const row=document.createElement('div'); row.className='kpi-row';
+      const left=document.createElement('div'); left.className='kpi-left'; left.textContent=label;
+      const right=document.createElement('div'); right.className='kpi-right';
+      const val=document.createElement('span'); val.className='kpi-val';
+      const sel=document.createElement('select'); sel.className='unit'; sel.setAttribute('aria-label','Output unit');
+
+      if(kind==='liquid'){
+        sel.innerHTML=`<option value="m3">m³</option><option value="bbl">bbl</option><option value="gal">gal</option><option value="L">L</option><option value="ft3">ft³</option>`;
+      }else{
+        sel.innerHTML=`<option value="kg">kg</option><option value="lb">lb</option><option value="tonne">tonne</option>`;
+      }
+      function render(){
+        if(kind==='liquid') val.textContent = fmtDp(U.volume[sel.value].fromSI(siValue));
+        else                val.textContent = fmtDp(U.mass[sel.value].fromSI(siValue));
+      }
+      sel.addEventListener('change',render);
+      $('#outDp')?.addEventListener('change',render);
+      render();
+
+      right.appendChild(val); right.appendChild(sel);
+      row.appendChild(left); row.appendChild(right);
+      list.appendChild(row);
     }
 
-    /* ===== Remember last unit per phase ===== */
-    window._lastUnitLiquid = 'l_m3';
-    window._lastUnitSolid = 'kg_m3';
+    // 1) Mix Fluid Total
+    addKPI('Mix Fluid Total', mixFluid_m3, 'liquid');
+    // 2) Water Total
+    addKPI(waterLabel, water_m3, 'liquid');
+    // 3) Chemicals (mirror B, phase-aware)
+    const chemRows = Array.from(document.querySelectorAll('#tableB tbody tr'));
+    chemRows.forEach(tr=>{
+      const code =(tr.querySelector('[id^="chemCode"]')?.value||'').trim();
+      const name =(tr.querySelector('[id^="chemName"]')?.value||'').trim();
+      const phase=(tr.querySelector('[id^="chemPhase"]')?.value||'liquid');
+      const concV=num(tr.querySelector('[id^="chemConc"]')?.value);
+      const unit =(tr.querySelector('[id^="chemUnit"]')?.value|| (phase==='liquid'?'l_m3':'kg_m3'));
 
-    /* ===== Section B: dynamic rows (Row#1 permanent; +/-; Enter-to-add) ===== */
-    (function initChemRows() {
-      const tbody = $('#tableB tbody');
-
-      function rows() { return Array.from(tbody.querySelectorAll('tr')); }
-
-      function reindex() {
-        rows().forEach((tr, i) => {
-          const n = i + 1; tr.dataset.row = n;
-          setId(tr, 'chemCode', n); setId(tr, 'chemName', n);
-          setId(tr, 'chemPhase', n); setId(tr, 'chemConc', n);
-          setId(tr, 'chemUnit', n); setId(tr, 'chemLot', n);
-
-          // ----- MINUS: ensure it exists AND is bound every time -----
-          let minus = tr.querySelector('.btn-minus');
-          if (!minus) {
-            minus = document.createElement('button');
-            minus.type = 'button';
-            minus.textContent = '-';
-            minus.className = 'btn btn-minus';
-            minus.title = 'Delete row';
-            tr.cells[0].appendChild(minus);
-          }
-          // (re)bind the click handler even if the element came from a clone
-          minus.onclick = () => delRow(tr);
-          minus.style.display = (n === 1) ? 'none' : 'inline-block';
-
-          // ----- PLUS: also (re)bind on every pass -----
-          const plus = tr.querySelector('.btn-plus');
-          if (plus) { plus.onclick = () => addBelow(tr); }
-
-          // keep unit list in sync + wire the row
-          syncUnitListToPhase(tr.querySelector('#chemPhase' + n), tr.querySelector('#chemUnit' + n));
-          wireRow(tr);
-        });
+      if(phase==='liquid'){
+        const concLpm3 = U.conc_liq[unit]?.toBaseLpm3(concV) || 0;
+        const qty_m3 = (concLpm3 * total_m3) / 1000;
+        addKPI(`${name||'Chemical'} (${code||'-'})`, qty_m3, 'liquid');
+      }else{
+        const concSI = U.conc_sol[unit]?.toSI(concV) || 0;
+        const qty_kg = concSI * total_m3;
+        addKPI(`${name||'Chemical'} (${code||'-'})`, qty_kg, 'solid');
       }
-      function setId(tr, base, nm) {
-        const el = tr.querySelector(`[id^="${base}"]`); if (!el) return;
-        el.id = base + nm;
-      }
+    });
+  }
 
-      function addBelow(tr) {
-        const clone = tr.cloneNode(true);
-        // clear values
-        clone.querySelectorAll('input[type="text"],input[type="number"]').forEach(i => i.value = '');
-        // default selects based on remembered per-phase
-        const phaseSel = clone.querySelector('[id^="chemPhase"]');
-        const unitSel = clone.querySelector('[id^="chemUnit"]');
-        if (phaseSel) { phaseSel.value = 'liquid'; }
-        if (unitSel) { unitSel.value = window._lastUnitLiquid || 'l_m3'; }
-        // rewire
-        wireRow(clone);
-        tr.after(clone);
-        reindex(); compute();
-      }
+  /* ===== Validation (sectioned, visible) ===== */
+  (function(){
+    // sectioned error buckets: A=Fluid, B=Chemicals, C=Mix Water, D=Pit&Field
+    const ERR_BUCKETS = {
+      A: document.getElementById('errListA'),
+      B: document.getElementById('errListB'),
+      C: document.getElementById('errListC'),
+      D: document.getElementById('errListD'),
+    };
+    const ERR_INLINE_CHEM = document.getElementById('errorsChemInline');
 
-      function delRow(tr) {
-        if (+tr.dataset.row === 1) return; // keep first
-        tr.remove(); reindex(); compute();
-      }
-
-      function syncUnitListToPhase(phaseSel, unitSel) {
-        if (!phaseSel || !unitSel) return;
-        const phase = phaseSel.value;
-        const prev = unitSel.value;
-        if (phase === 'solid') {
-          unitSel.innerHTML = `
-        <option value="kg_m3">kg/m³</option>
-        <option value="lb_bbl">lb/bbl</option>
-        <option value="lb_ft3">lb/ft³</option>`;
-          unitSel.value = ['kg_m3', 'lb_bbl', 'lb_ft3'].includes(prev) ? prev : (window._lastUnitSolid || 'kg_m3');
-        } else {
-          unitSel.innerHTML = `
-        <option value="l_m3">L/m³</option>
-        <option value="gal_bbl">gal/bbl</option>
-        <option value="m3_m3">m³/m³</option>
-        <option value="gal_gal">gal/gal</option>`;
-          unitSel.value = ['l_m3', 'gal_bbl', 'm3_m3', 'gal_gal'].includes(prev) ? prev : (window._lastUnitLiquid || 'l_m3');
-        }
-      }
-
-      function wireRow(tr) {
-        tr.querySelectorAll('input,select').forEach(el => {
-          el.addEventListener('input', e => {
-            if (e.target.id.startsWith('chemPhase')) {
-              const row = e.target.closest('tr');
-              syncUnitListToPhase(row.querySelector('[id^="chemPhase"]'), row.querySelector('[id^="chemUnit"]'));
-            }
-            compute();
-          });
-          el.addEventListener('change', e => {
-            // remember last-picked unit per phase
-            if (e.target.id.startsWith('chemUnit')) {
-              const row = e.target.closest('tr');
-              const phase = row.querySelector('[id^="chemPhase"]')?.value || 'liquid';
-              if (phase === 'solid') window._lastUnitSolid = e.target.value;
-              else window._lastUnitLiquid = e.target.value;
-            }
-            if (e.target.id.startsWith('chemPhase')) {
-              const row = e.target.closest('tr');
-              const unitSel = row.querySelector('[id^="chemUnit"]');
-              if (row.querySelector('[id^="chemPhase"]').value === 'solid') unitSel.value = window._lastUnitSolid;
-              else unitSel.value = window._lastUnitLiquid;
-            }
-            compute();
-          });
-        });
-
-        // Enter-to-add-row on LOT cell
-        const lot = tr.querySelector('[id^="chemLot"]');
-        if (lot && !lot._enterHooked) {
-          lot.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addBelow(tr);
-              const next = tr.nextElementSibling;
-              if (next) { const first = next.querySelector('[id^="chemCode"]'); if (first) first.focus(); }
-            }
-          });
-          lot._enterHooked = true;
-        }
-      }
-
-      // initial
-      reindex();
-    })();
-
-    /* ===== Compute: SI backbone, then convert to selected output units ===== */
-    function compute() {
-      // Total (m3)
-      const pump_m3 = U.volume[$('#pumpableUnit').value].toSI(n($('#pumpableVal').value));
-      const dead_m3 = U.volume[$('#pitDeadUnit').value].toSI(n($('#pitDeadVal').value));
-      const total_m3 = pump_m3 + dead_m3;
-      $('#totalVal').value = fmtDp(U.volume[$('#totalUnit').value].fromSI(total_m3));
-
-      // Mix Fluid (A)
-      const mixFluid_SI = U.conc_liq[$('#mixFluidConcUnit').value].toSI(n($('#mixFluidConc').value));
-      const mixFluid_m3 = mixFluid_SI * total_m3;
-
-      // Water total (m3) – label must reflect waterType
-      const waterType = ($('#waterType')?.value || '').trim();
-      const waterLabel = waterType ? `${waterType} Total` : 'Water Total';
-      const waterConc_SI = U.conc_liq[$('#waterConcUnit').value].toSI(n($('#waterConc').value));
-      const water_m3 = waterConc_SI * total_m3;
-
-      // Build Section F in required order:
-      // 1) Mix Fluid Total (top), 2) Water Total (label uses waterType), 3) Chemicals
-      const list = $('#kpiList'); list.innerHTML = '';
-
-      function addKPI(label, siValue, kind) {
-        const row = document.createElement('div'); row.className = 'kpi-row';
-        const left = document.createElement('div'); left.className = 'kpi-left'; left.textContent = label;
-        const right = document.createElement('div'); right.className = 'kpi-right';
-        const val = document.createElement('span'); val.className = 'kpi-val';
-        const sel = document.createElement('select'); sel.className = 'unit'; sel.setAttribute('aria-label', 'Output unit');
-
-        if (kind === 'liquid') {
-          sel.innerHTML = `<option value="m3">m³</option><option value="bbl">bbl</option><option value="gal">gal</option><option value="L">L</option><option value="ft3">ft³</option>`;
-        } else {
-          sel.innerHTML = `<option value="kg">kg</option><option value="lb">lb</option><option value="tonne">tonne</option>`;
-        }
-        function render() {
-          if (kind === 'liquid') val.textContent = fmtDp(U.volume[sel.value].fromSI(siValue));
-          else val.textContent = fmtDp(U.mass[sel.value].fromSI(siValue));
-        }
-        sel.addEventListener('change', render);
-        $('#outDp')?.addEventListener('change', render);
-        render();
-
-        right.appendChild(val); right.appendChild(sel);
-        row.appendChild(left); row.appendChild(right);
-        list.appendChild(row);
-      }
-
-      // (1) Mix Fluid Total at top (always show, even if zero)
-      addKPI('Mix Fluid Total', mixFluid_m3, 'liquid');
-
-      // (2) Water Total, labeled by water type
-      addKPI(waterLabel, water_m3, 'liquid');
-
-      // (3) Chemicals (mirror B)
-      const chemRows = Array.from(document.querySelectorAll('#tableB tbody tr'));
-      chemRows.forEach(tr => {
-        const code = tr.querySelector('[id^="chemCode"]')?.value || '';
-        const name = tr.querySelector('[id^="chemName"]')?.value || '';
-        const phase = tr.querySelector('[id^="chemPhase"]')?.value || 'liquid';
-        const concV = n(tr.querySelector('[id^="chemConc"]')?.value);
-        const unit = tr.querySelector('[id^="chemUnit"]')?.value || (phase === 'liquid' ? 'l_m3' : 'kg_m3');
-
-        if (phase === 'liquid') {
-          const concSI = U.conc_liq[unit]?.toSI(concV) || 0;
-          const qty_m3 = concSI * total_m3;
-          addKPI(`${name?.trim() || 'Chemical'} (${code?.trim() || '-'})`, qty_m3, 'liquid');
-        } else {
-          const concSI = U.conc_sol[unit]?.toSI(concV) || 0;
-          const qty_kg = concSI * total_m3;
-          addKPI(`${name?.trim() || 'Chemical'} (${code?.trim() || '-'})`, qty_kg, 'solid');
-        }
+    function clearMsgs() {
+      Object.values(ERR_BUCKETS).forEach(ul => { if (ul) ul.innerHTML = ''; });
+      if (ERR_INLINE_CHEM) { ERR_INLINE_CHEM.innerHTML = ''; ERR_INLINE_CHEM.style.display = 'none'; }
+      document.querySelectorAll('.err-section').forEach(sec => {
+        const ul = sec.querySelector('ul'); sec.style.display = (ul && ul.children.length) ? '' : 'none';
       });
     }
 
-    /* ===== Wire to compute ===== */
-    [
-      '#densityVal', '#densityUnit',
-      '#mixFluidConc', '#mixFluidConcUnit',
-      '#mixWaterConc', '#mixWaterConcUnit',
-      '#solidsVolFraction',
-      '#waterType', '#waterDensityVal', '#waterDensityUnit',
-      '#waterConc', '#waterConcUnit',
-      '#pitName', '#pitCapacityVal', '#pitCapacityUnit', '#pitDeadVal', '#pitDeadUnit',
-      '#pumpableVal', '#pumpableUnit', '#totalUnit',
-      '#outDp'
-    ].forEach(sel => {
-      const el = $(sel); if (!el) return;
-      el.addEventListener('input', compute);
-      el.addEventListener('change', compute);
-    });
+    function pushMsg(secKey, text, {alsoInlineChem=false} = {}) {
+      if (!SHOW_ERRORS || !text) return;
+      const ul = ERR_BUCKETS[secKey]; if (!ul) return;
+      const li = document.createElement('li');
+      li.textContent = text;
+      ul.appendChild(li);
+      if (alsoInlineChem && ERR_INLINE_CHEM) {
+        const p = document.createElement('div');
+        p.textContent = text;
+        ERR_INLINE_CHEM.appendChild(p);
+        ERR_INLINE_CHEM.style.display = 'block';
+      }
+    }
 
-    /* ===== Init ===== */
-    document.addEventListener('DOMContentLoaded', () => {
-      // recompute also whenever Section B changes
-      document.querySelector('#tableB tbody').addEventListener('input', compute);
-      document.querySelector('#tableB tbody').addEventListener('change', compute);
-      compute();
-    });
-  </script>
+    function markInvalid(el, ok, msg, secKey, mirrorChem=false) {
+      if (!el) return;
+      el.classList.toggle('invalid', !ok);
+      el.title = (!ok && SHOW_ERRORS && msg) ? msg : '';
+      if (!ok && msg && SHOW_ERRORS) pushMsg(secKey, msg, {alsoInlineChem: mirrorChem});
+    }
 
+    function alphaSpaceOK(str){ return /^[A-Za-z ]*$/.test(str); }
+    function asciiPrintableOK(str){ return /^[\x20-\x7E]*$/.test(str); }
+
+    const parseDec = (el, {min=0, max=Infinity, clamp=false, fallback=0, label=''} = {})=>{
+      if(!el) return {value:0, ok:true};
+      let v = (el.value||'').toString().trim().replace(',', '.');
+      // forbid scientific notation
+      if(/[eE]/.test(v)){ markInvalid(el,false,`${label||el.id}: invalid number — treated as 0`,'A'); if(clamp) el.value=String(fallback); return {value:fallback, ok:false};}
+      const n = parseFloat(v);
+      const okNumber = Number.isFinite(n);
+      if(!okNumber){ markInvalid(el,false,`${label||el.id}: invalid number — treated as 0`,'A'); if(clamp) el.value=String(fallback); return {value:fallback, ok:false};}
+      if(n < min || n > max){
+        const clamped = Math.min(Math.max(n,min),max);
+        markInvalid(el,false,`${label||el.id}: out of range (${min}–${max})`,'A');
+        if(clamp){ el.value=String(clamped); return {value:clamped, ok:false};}
+        return {value:n, ok:false};
+      }
+      markInvalid(el,true,'','A'); return {value:n, ok:true};
+    };
+
+    function validateAll(){
+      clearMsgs();
+
+      // ---- Fluid Properties (A) ----
+      const densValEl = $('#densityVal'), densUnitEl = $('#densityUnit');
+      const dens = parseDec(densValEl, {min:0, max:5000, label:'Fluid Density'}).value;
+      const rho_si = U.density[densUnitEl.value].toSI(dens); // kg/m3
+      const rhoOK = rho_si >= 1000 && rho_si <= 5000;
+      markInvalid(densValEl, rhoOK, rhoOK?'':'Density must be between 1000 and 5000 kg/m³ (≥ water)', 'A');
+
+      const mixFluid = parseDec($('#mixFluidConc'), {min:0, label:'Mix Fluid Conc'}).value;
+      const mixWater = parseDec($('#mixWaterConc'), {min:0, label:'Mix Water Conc'}).value;
+      const mixFluid_Lpm3 = U.conc_liq[$('#mixFluidConcUnit').value].toBaseLpm3(mixFluid);
+      const mixWater_Lpm3 = U.conc_liq[$('#mixWaterConcUnit').value].toBaseLpm3(mixWater);
+      const wfOK = mixWater_Lpm3 <= mixFluid_Lpm3;
+      markInvalid($('#mixWaterConc'), wfOK, wfOK?'':'Water Conc must not exceed Mix Fluid Conc', 'A');
+
+      const svp = parseDec($('#solidsVolPercent'), {min:0, max:100, label:'Solids Vol. Fraction (%)'}).value;
+
+      // ---- Mixing Water (C) ----
+      const wt = $('#waterType'); const wtVal = (wt?.value||'');
+      const wtOK = alphaSpaceOK(wtVal);
+      markInvalid(wt, wtOK, wtOK?'':'Water Type: only letters and spaces allowed', 'C');
+
+      const waterDensVal = parseDec($('#waterDensityVal'), {min:0, max:2500, label:'Water Density'}).value;
+      const waterRho = U.density[$('#waterDensityUnit').value].toSI(waterDensVal);
+      const waterRhoOK = waterRho >= 1000 && waterRho <= 2500;
+      markInvalid($('#waterDensityVal'), waterRhoOK, waterRhoOK?'':'Water density must be ≥ 1000 kg/m³ and ≤ 2500 kg/m³', 'C');
+
+      const waterConcV = parseDec($('#waterConc'), {min:0, label:'Water Conc'}).value;
+      const waterConcLpm3 = U.conc_liq[$('#waterConcUnit').value].toBaseLpm3(waterConcV);
+      const wvsOK = waterConcLpm3 <= mixFluid_Lpm3;
+      markInvalid($('#waterConc'), wvsOK, wvsOK?'':'Water Conc must not exceed Mix Fluid Conc', 'C');
+
+      // ---- Pit & Field (D) ----
+      const cap = parseDec($('#pitCapacityVal'), {min:0, label:'Pit Capacity'}).value;
+      const cap_m3 = U.volume[$('#pitCapacityUnit').value].toSI(cap);
+      const dead = parseDec($('#pitDeadVal'), {min:0, label:'Pit Dead Volume'}).value;
+      const dead_m3 = U.volume[$('#pitDeadUnit').value].toSI(dead);
+      const deadOK = dead_m3 <= cap_m3;
+      markInvalid($('#pitDeadVal'), deadOK, deadOK?'':'Pit Dead Volume must be ≤ Pit Capacity', 'D');
+
+      const pump = parseDec($('#pumpableVal'), {min:0, label:'Pumpable Volume'}).value;
+      const pump_m3 = U.volume[$('#pumpableUnit').value].toSI(pump);
+      const pumpOK = pump_m3 <= Math.max(cap_m3 - dead_m3, 0);
+      markInvalid($('#pumpableVal'), pumpOK, pumpOK?'':'Pumpable must be ≤ (Capacity − Dead)', 'D');
+
+      // ---- Chemicals (B) ----
+      const codes=[], names=[], lots=[];
+      $$('#tableB tbody tr').forEach(tr=>{
+        const codeEl=tr.querySelector('[id^="chemCode"]');
+        const nameEl=tr.querySelector('[id^="chemName"]');
+        const lotEl =tr.querySelector('[id^="chemLot"]');
+
+        [codeEl,nameEl,lotEl].forEach(el=>{
+          if(!el) return;
+          const ok = /^[\x20-\x7E]*$/.test(el.value||'');
+          markInvalid(el, ok, ok?'':'Only ASCII printable characters allowed', 'B', true);
+        });
+
+        const norm = s => (s||'').trim().toLowerCase();
+        codes.push({el:codeEl, key:norm(codeEl?.value)});
+        names.push({el:nameEl, key:norm(nameEl?.value)});
+        lots .push({el:lotEl,  key:norm(lotEl ?.value)});
+      });
+      function enforceUnique(list,label){
+        const seen=new Map();
+        list.forEach(({el,key})=>{
+          if(!key) return; // ignore empty
+          if(seen.has(key)){
+            markInvalid(el,false,`${label}: must be unique (trimmed, case-insensitive)`, 'B', true);
+            markInvalid(seen.get(key),false,`${label}: duplicate of another row`, 'B', true);
+          }else{
+            markInvalid(el,true,'','B', false);
+            seen.set(key,el);
+          }
+        });
+      }
+      enforceUnique(codes,'Chemical Code');
+      enforceUnique(names,'Chemical Name');
+      enforceUnique(lots,'LOT Number');
+
+      // finally, show/hide section headings based on content
+      document.querySelectorAll('.err-section').forEach(sec => {
+        const ul = sec.querySelector('ul'); sec.style.display = (ul && ul.children.length) ? '' : 'none';
+      });
+    }
+
+    // wire
+    document.addEventListener('input', ()=>{ validateAll(); });
+    document.addEventListener('change', ()=>{ validateAll(); });
+    document.addEventListener('DOMContentLoaded', ()=>{ validateAll(); });
+    window.validateAll = validateAll;
+  })();
+
+  /* ===== Wire compute ===== */
+  [
+    '#densityVal','#densityUnit',
+    '#mixFluidConc','#mixFluidConcUnit',
+    '#mixWaterConc','#mixWaterConcUnit',
+    '#solidsVolPercent',
+    '#waterType','#waterDensityVal','#waterDensityUnit',
+    '#waterConc','#waterConcUnit',
+    '#pitName','#pitCapacityVal','#pitCapacityUnit','#pitDeadVal','#pitDeadUnit',
+    '#pumpableVal','#pumpableUnit','#totalUnit',
+    '#outDp'
+  ].forEach(sel=>{
+    const el=$(sel); if(!el) return;
+    el.addEventListener('input', compute);
+    el.addEventListener('change', compute);
+  });
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    document.querySelector('#tableB tbody').addEventListener('input', ()=>{ compute(); });
+    document.querySelector('#tableB tbody').addEventListener('change',()=>{ compute(); });
+    compute();
+  });
+</script>
 </body>
-
 </html>
