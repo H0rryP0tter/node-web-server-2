@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -763,21 +764,68 @@
       function alphaSpaceOK(str) { return /^[A-Za-z ]*$/.test(str); }
       function asciiPrintableOK(str) { return /^[\x20-\x7E]*$/.test(str); }
 
+      // parseDec: Parse decimal numbers with validation
+      // Scientific notation (e.g., 1e3, 2.5E-2) is rejected to prevent user confusion
+      // in industrial/field contexts where explicit decimal notation is standard
       const parseDec = (el, { min = 0, max = Infinity, clamp = false, fallback = 0, label = '' } = {}) => {
         if (!el) return { value: 0, ok: true };
-        let v = (el.value || '').toString().trim().replace(',', '.');
-        // forbid scientific notation
-        if (/[eE]/.test(v)) { markInvalid(el, false, `${label || el.id}: invalid number - treated as 0`, 'A'); if (clamp) el.value = String(fallback); return { value: fallback, ok: false }; }
+        
+        let v = (el.value || '').toString().trim();
+        
+        // Handle empty input
+        if (v === '') {
+          markInvalid(el, true, '', 'A');
+          return { value: fallback, ok: true };
+        }
+        
+        // Normalize decimal separator (replace comma with period)
+        v = v.replace(',', '.');
+        
+        // Check for invalid characters and patterns
+        const invalidPatterns = [
+          /[eE]/, // scientific notation
+          /\.\./,  // multiple consecutive dots
+          /^[+-]?\.\./, // multiple dots at start
+          /\.\d*\./, // multiple dots anywhere
+        ];
+        
+        for (const pattern of invalidPatterns) {
+          if (pattern.test(v)) {
+            markInvalid(el, false, `${label || el.id}: invalid number format - treated as ${fallback}`, 'A');
+            if (clamp) el.value = String(fallback);
+            return { value: fallback, ok: false };
+          }
+        }
+        
+        // Check for valid number format (optional sign, digits, optional decimal point and digits)
+        if (!/^[+-]?(\d+\.?\d*|\d*\.\d+)$/.test(v)) {
+          markInvalid(el, false, `${label || el.id}: invalid number format - treated as ${fallback}`, 'A');
+          if (clamp) el.value = String(fallback);
+          return { value: fallback, ok: false };
+        }
+        
         const n = parseFloat(v);
-        const okNumber = Number.isFinite(n);
-        if (!okNumber) { markInvalid(el, false, `${label || el.id}: invalid number - treated as 0`, 'A'); if (clamp) el.value = String(fallback); return { value: fallback, ok: false }; }
+        
+        // Check if parsing resulted in a valid finite number
+        if (!Number.isFinite(n)) {
+          markInvalid(el, false, `${label || el.id}: invalid number - treated as ${fallback}`, 'A');
+          if (clamp) el.value = String(fallback);
+          return { value: fallback, ok: false };
+        }
+        
+        // Check range
         if (n < min || n > max) {
           const clamped = Math.min(Math.max(n, min), max);
           markInvalid(el, false, `${label || el.id}: out of range (${min}-${max})`, 'A');
-          if (clamp) { el.value = String(clamped); return { value: clamped, ok: false }; }
+          if (clamp) { 
+            el.value = String(clamped); 
+            return { value: clamped, ok: false }; 
+          }
           return { value: n, ok: false };
         }
-        markInvalid(el, true, '', 'A'); return { value: n, ok: true };
+        
+        markInvalid(el, true, '', 'A');
+        return { value: n, ok: true };
       };
 
       function validateAll() {
@@ -868,36 +916,68 @@
         });
       }
 
-      // wire
-      document.addEventListener('input', () => { validateAll(); });
-      document.addEventListener('change', () => { validateAll(); });
-      document.addEventListener('DOMContentLoaded', () => { validateAll(); });
+      // wire - use capturing phase and check for duplicates
+      if (!document._validationWired) {
+        document.addEventListener('input', () => { validateAll(); });
+        document.addEventListener('change', () => { validateAll(); });
+        document._validationWired = true;
+      }
+      
+      // Expose validateAll globally
       window.validateAll = validateAll;
+      
+      // Run initial validation when DOM is ready or immediately if already loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => { validateAll(); }, { once: true });
+      } else {
+        validateAll();
+      }
     })();
 
     /* ===== Wire compute ===== */
-    [
-      '#densityVal', '#densityUnit',
-      '#mixFluidConc', '#mixFluidConcUnit',
-      '#mixWaterConc', '#mixWaterConcUnit',
-      '#solidsVolPercent',
-      '#waterType', '#waterDensityVal', '#waterDensityUnit',
-      '#waterConc', '#waterConcUnit',
-      '#pitName', '#pitCapacityVal', '#pitCapacityUnit', '#pitDeadVal', '#pitDeadUnit',
-      '#pumpableVal', '#pumpableUnit', '#totalUnit',
-      '#outDp'
-    ].forEach(sel => {
-      const el = $(sel); if (!el) return;
-      el.addEventListener('input', compute);
-      el.addEventListener('change', compute);
-    });
+    (function wireGlobalCompute() {
+      // Prevent duplicate listeners with flag
+      [
+        '#densityVal', '#densityUnit',
+        '#mixFluidConc', '#mixFluidConcUnit',
+        '#mixWaterConc', '#mixWaterConcUnit',
+        '#solidsVolPercent',
+        '#waterType', '#waterDensityVal', '#waterDensityUnit',
+        '#waterConc', '#waterConcUnit',
+        '#pitName', '#pitCapacityVal', '#pitCapacityUnit', '#pitDeadVal', '#pitDeadUnit',
+        '#pumpableVal', '#pumpableUnit', '#totalUnit',
+        '#outDp'
+      ].forEach(sel => {
+        const el = $(sel); 
+        if (!el || el._computeWired) return;
+        
+        el.addEventListener('input', compute);
+        el.addEventListener('change', compute);
+        el._computeWired = true;
+      });
+    })();
 
     document.addEventListener('DOMContentLoaded', () => {
-      document.querySelector('#tableB tbody').addEventListener('input', compute);
-      document.querySelector('#tableB tbody').addEventListener('change', compute);
+      const tbody = document.querySelector('#tableB tbody');
+      if (tbody && !tbody._computeWired) {
+        tbody.addEventListener('input', compute);
+        tbody.addEventListener('change', compute);
+        tbody._computeWired = true;
+      }
 
       compute(); // initial render
-    });
+    }, { once: true });
+    
+    // If DOM is already loaded, run immediately
+    if (document.readyState !== 'loading') {
+      const tbody = document.querySelector('#tableB tbody');
+      if (tbody && !tbody._computeWired) {
+        tbody.addEventListener('input', compute);
+        tbody.addEventListener('change', compute);
+        tbody._computeWired = true;
+      }
+      compute();
+    }
 
   </script>
 </body>
