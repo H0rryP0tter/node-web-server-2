@@ -548,6 +548,44 @@
     /* ===== Feature flags ===== */
     const SHOW_ERRORS = true; // turn UI validation display on
 
+    /* ===== Constants & Configuration ===== */
+    const VALIDATION_LIMITS = {
+      // Density limits (kg/m³)
+      DENSITY_MIN: 1000,        // Minimum fluid density (water baseline)
+      DENSITY_MAX: 5000,        // Maximum fluid density (safety limit)
+      WATER_DENSITY_MIN: 1000,  // Minimum water density (pure water)
+      WATER_DENSITY_MAX: 2500,  // Maximum water density (brine)
+      
+      // Volume/Concentration limits
+      SOLIDS_VOL_MIN: 0,        // Minimum solids volume fraction (%)
+      SOLIDS_VOL_MAX: 100,      // Maximum solids volume fraction (%)
+      
+      // General numeric limits
+      NUMERIC_MIN: 0,           // Minimum for non-negative values
+      NUMERIC_MAX: Infinity,    // No upper limit for most values
+    };
+
+    const DEFAULT_PRECISION = 2;  // Default decimal places for output
+
+    /* ===== State Management ===== */
+    // Encapsulated state for unit preferences (instead of window globals)
+    const AppState = {
+      lastUnitLiquid: 'l_m3',
+      lastUnitSolid: 'kg_m3',
+      
+      getLastUnit: function(phase) {
+        return phase === 'solid' ? this.lastUnitSolid : this.lastUnitLiquid;
+      },
+      
+      setLastUnit: function(phase, unit) {
+        if (phase === 'solid') {
+          this.lastUnitSolid = unit;
+        } else {
+          this.lastUnitLiquid = unit;
+        }
+      }
+    };
+
     /* ===== Units registry (SI backbone) ===== */
     const U = {
       volume: { // SI: m3
@@ -590,13 +628,9 @@
     const $$ = s => Array.from(document.querySelectorAll(s));
     const num = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; }
     const fmtDp = v => {
-      const dp = Number($('#outDp')?.value || 2);
+      const dp = Number($('#outDp')?.value || DEFAULT_PRECISION);
       return Number.isFinite(v) ? (+v).toFixed(dp) : '';
     };
-
-    /* ===== Remember last unit per phase ===== */
-    window._lastUnitLiquid = 'l_m3';
-    window._lastUnitSolid = 'kg_m3';
 
     /* ===== Section B: dynamic rows (+ / - ; Enter to add) ===== */
     (function initChemRows() {
@@ -633,7 +667,7 @@
         const phaseSel = clone.querySelector('[id^="chemPhase"]');
         const unitSel = clone.querySelector('[id^="chemUnit"]');
         if (phaseSel) phaseSel.value = 'liquid';
-        if (unitSel) unitSel.value = (window._lastUnitLiquid || 'l_m3');
+        if (unitSel) unitSel.value = AppState.getLastUnit('liquid');
         wireRow(clone);
         tr.after(clone); reindex(); compute(); validateAll();
       }
@@ -652,14 +686,14 @@
           <option value="lb_ft3">lb/ft³</option>
           <option value="kg_L">kg/L</option>
           <option value="MT_m3">MT/m³</option>`;
-          unitSel.value = ['kg_m3', 'lb_bbl', 'lb_gal', 'lb_ft3', 'kg_L', 'MT_m3'].includes(prev) ? prev : (window._lastUnitSolid || 'kg_m3');
+          unitSel.value = ['kg_m3', 'lb_bbl', 'lb_gal', 'lb_ft3', 'kg_L', 'MT_m3'].includes(prev) ? prev : AppState.getLastUnit('solid');
         } else {
           unitSel.innerHTML = `
           <option value="l_m3">L/m³</option>
           <option value="gal_bbl">gal/bbl</option>
           <option value="m3_m3">m³/m³</option>
           <option value="gal_gal">gal/gal</option>`;
-          unitSel.value = ['l_m3', 'gal_bbl', 'm3_m3', 'gal_gal'].includes(prev) ? prev : (window._lastUnitLiquid || 'l_m3');
+          unitSel.value = ['l_m3', 'gal_bbl', 'm3_m3', 'gal_gal'].includes(prev) ? prev : AppState.getLastUnit('liquid');
         }
       }
       function wireRow(tr) {
@@ -682,15 +716,13 @@
             if (e.target.id.startsWith('chemUnit')) {
               const row = e.target.closest('tr');
               const phase = row.querySelector('[id^="chemPhase"]')?.value || 'liquid';
-              if (phase === 'solid') window._lastUnitSolid = e.target.value;
-              else window._lastUnitLiquid = e.target.value;
+              AppState.setLastUnit(phase, e.target.value);
             }
             if (e.target.id.startsWith('chemPhase')) {
               const row = e.target.closest('tr');
               const unitSel = row.querySelector('[id^="chemUnit"]');
-              unitSel.value = (row.querySelector('[id^="chemPhase"]').value === 'solid')
-                ? window._lastUnitSolid
-                : window._lastUnitLiquid;
+              const phase = row.querySelector('[id^="chemPhase"]').value;
+              unitSel.value = AppState.getLastUnit(phase);
             }
             updateChemicalRowRequirements(tr);
             compute(); validateAll();
@@ -748,21 +780,21 @@
 
     /* ===== Compute with SI backbone & KPI order ===== */
     function compute() {
-      // totals in m3
-      const pump_m3 = U.volume[$('#pumpableUnit').value].toSI(num($('#pumpableVal').value));
-      const dead_m3 = U.volume[$('#pitDeadUnit').value].toSI(num($('#pitDeadVal').value));
-      const total_m3 = pump_m3 + dead_m3;
-      $('#totalVal').value = fmtDp(U.volume[$('#totalUnit').value].fromSI(total_m3));
+      // Calculate volumes in m³ (SI units)
+      const pumpable_m3 = U.volume[$('#pumpableUnit').value].toSI(num($('#pumpableVal').value));
+      const pitDead_m3 = U.volume[$('#pitDeadUnit').value].toSI(num($('#pitDeadVal').value));
+      const totalVolume_m3 = pumpable_m3 + pitDead_m3;
+      $('#totalVal').value = fmtDp(U.volume[$('#totalUnit').value].fromSI(totalVolume_m3));
 
-      // mix fluid total (L/m3 base)
-      const mixFluid_Lpm3 = U.conc_liq[$('#mixFluidConcUnit').value].toBaseLpm3(num($('#mixFluidConc').value));
-      const mixFluid_m3 = (mixFluid_Lpm3 * total_m3) / 1000;
+      // Calculate mix fluid total (L/m³ base, convert to m³)
+      const mixFluidConc_Lpm3 = U.conc_liq[$('#mixFluidConcUnit').value].toBaseLpm3(num($('#mixFluidConc').value));
+      const mixFluidVolume_m3 = (mixFluidConc_Lpm3 * totalVolume_m3) / 1000;
 
-      // water total (label reflects water type)
+      // Calculate water total (label reflects water type)
       const waterType = ($('#waterType')?.value || '').trim();
       const waterLabel = waterType ? `${waterType} Total` : 'Water Total';
-      const water_Lpm3 = U.conc_liq[$('#waterConcUnit').value].toBaseLpm3(num($('#waterConc').value));
-      const water_m3 = (water_Lpm3 * total_m3) / 1000;
+      const waterConc_Lpm3 = U.conc_liq[$('#waterConcUnit').value].toBaseLpm3(num($('#waterConc').value));
+      const waterVolume_m3 = (waterConc_Lpm3 * totalVolume_m3) / 1000;
 
       const list = $('#kpiList'); list.innerHTML = '';
 
@@ -791,26 +823,26 @@
       }
 
       // 1) Mix Fluid Total
-      addKPI('Mix Fluid Total', mixFluid_m3, 'liquid');
+      addKPI('Mix Fluid Total', mixFluidVolume_m3, 'liquid');
       // 2) Water Total
-      addKPI(waterLabel, water_m3, 'liquid');
+      addKPI(waterLabel, waterVolume_m3, 'liquid');
       // 3) Chemicals (mirror B, phase-aware)
       const chemRows = Array.from(document.querySelectorAll('#tableB tbody tr'));
       chemRows.forEach(tr => {
         const code = (tr.querySelector('[id^="chemCode"]')?.value || '').trim();
         const name = (tr.querySelector('[id^="chemName"]')?.value || '').trim();
         const phase = (tr.querySelector('[id^="chemPhase"]')?.value || 'liquid');
-        const concV = num(tr.querySelector('[id^="chemConc"]')?.value);
+        const concValue = num(tr.querySelector('[id^="chemConc"]')?.value);
         const unit = (tr.querySelector('[id^="chemUnit"]')?.value || (phase === 'liquid' ? 'l_m3' : 'kg_m3'));
 
         if (phase === 'liquid') {
-          const concLpm3 = U.conc_liq[unit]?.toBaseLpm3(concV) || 0;
-          const qty_m3 = (concLpm3 * total_m3) / 1000;
-          addKPI(`${name || 'Chemical'} (${code || '-'})`, qty_m3, 'liquid');
+          const conc_Lpm3 = U.conc_liq[unit]?.toBaseLpm3(concValue) || 0;
+          const quantity_m3 = (conc_Lpm3 * totalVolume_m3) / 1000;
+          addKPI(`${name || 'Chemical'} (${code || '-'})`, quantity_m3, 'liquid');
         } else {
-          const concSI = U.conc_sol[unit]?.toSI(concV) || 0;
-          const qty_kg = concSI * total_m3;
-          addKPI(`${name || 'Chemical'} (${code || '-'})`, qty_kg, 'solid');
+          const conc_SI = U.conc_sol[unit]?.toSI(concValue) || 0;
+          const quantity_kg = conc_SI * totalVolume_m3;
+          addKPI(`${name || 'Chemical'} (${code || '-'})`, quantity_kg, 'solid');
         }
       });
 
@@ -974,48 +1006,62 @@
         clearMsgs();
 
         // ---- Fluid Properties (A) ----
-        const densValEl = $('#densityVal'), densUnitEl = $('#densityUnit');
-        const dens = parseDec(densValEl, { min: 0, max: 5000, label: 'Fluid Density' }).value;
-        const rho_si = U.density[densUnitEl.value].toSI(dens); // kg/m3
-        const rhoOK = rho_si >= 1000 && rho_si <= 5000;
-        markInvalid(densValEl, rhoOK, rhoOK ? '' : 'Density must be between 1000 and 5000 kg/m³ (≥ water)', 'A');
+        const densityValEl = $('#densityVal');
+        const densityUnitEl = $('#densityUnit');
+        const densityValue = parseDec(densityValEl, { 
+          min: VALIDATION_LIMITS.NUMERIC_MIN, 
+          max: VALIDATION_LIMITS.DENSITY_MAX, 
+          label: 'Fluid Density' 
+        }).value;
+        const densitySI = U.density[densityUnitEl.value].toSI(densityValue); // kg/m³
+        const densityOK = densitySI >= VALIDATION_LIMITS.DENSITY_MIN && densitySI <= VALIDATION_LIMITS.DENSITY_MAX;
+        markInvalid(densityValEl, densityOK, densityOK ? '' : `Density must be between ${VALIDATION_LIMITS.DENSITY_MIN} and ${VALIDATION_LIMITS.DENSITY_MAX} kg/m³ (≥ water)`, 'A');
 
-        const mixFluid = parseDec($('#mixFluidConc'), { min: 0, label: 'Mix Fluid Conc' }).value;
-        const mixWater = parseDec($('#mixWaterConc'), { min: 0, label: 'Mix Water Conc' }).value;
-        const mixFluid_Lpm3 = U.conc_liq[$('#mixFluidConcUnit').value].toBaseLpm3(mixFluid);
-        const mixWater_Lpm3 = U.conc_liq[$('#mixWaterConcUnit').value].toBaseLpm3(mixWater);
-        const wfOK = mixWater_Lpm3 <= mixFluid_Lpm3;
-        markInvalid($('#mixWaterConc'), wfOK, wfOK ? '' : 'Water Conc must not exceed Mix Fluid Conc', 'A');
+        const mixFluidValue = parseDec($('#mixFluidConc'), { min: VALIDATION_LIMITS.NUMERIC_MIN, label: 'Mix Fluid Conc' }).value;
+        const mixWaterValue = parseDec($('#mixWaterConc'), { min: VALIDATION_LIMITS.NUMERIC_MIN, label: 'Mix Water Conc' }).value;
+        const mixFluidConc_Lpm3 = U.conc_liq[$('#mixFluidConcUnit').value].toBaseLpm3(mixFluidValue);
+        const mixWaterConc_Lpm3 = U.conc_liq[$('#mixWaterConcUnit').value].toBaseLpm3(mixWaterValue);
+        const waterFluidRatioOK = mixWaterConc_Lpm3 <= mixFluidConc_Lpm3;
+        markInvalid($('#mixWaterConc'), waterFluidRatioOK, waterFluidRatioOK ? '' : 'Water Conc must not exceed Mix Fluid Conc', 'A');
 
-        const svp = parseDec($('#solidsVolPercent'), { min: 0, max: 100, label: 'Solids Vol. Fraction (%)' }).value;
+        const solidsVolPercent = parseDec($('#solidsVolPercent'), { 
+          min: VALIDATION_LIMITS.SOLIDS_VOL_MIN, 
+          max: VALIDATION_LIMITS.SOLIDS_VOL_MAX, 
+          label: 'Solids Vol. Fraction (%)' 
+        }).value;
 
         // ---- Mixing Water (C) ----
-        const wt = $('#waterType'); const wtVal = (wt?.value || '');
-        const wtOK = alphaSpaceOK(wtVal);
-        markInvalid(wt, wtOK, wtOK ? '' : 'Water Type: only letters and spaces allowed', 'C');
+        const waterTypeEl = $('#waterType');
+        const waterTypeVal = (waterTypeEl?.value || '');
+        const waterTypeOK = alphaSpaceOK(waterTypeVal);
+        markInvalid(waterTypeEl, waterTypeOK, waterTypeOK ? '' : 'Water Type: only letters and spaces allowed', 'C');
 
-        const waterDensVal = parseDec($('#waterDensityVal'), { min: 0, max: 2500, label: 'Water Density' }).value;
-        const waterRho = U.density[$('#waterDensityUnit').value].toSI(waterDensVal);
-        const waterRhoOK = waterRho >= 1000 && waterRho <= 2500;
-        markInvalid($('#waterDensityVal'), waterRhoOK, waterRhoOK ? '' : 'Water density must be ≥ 1000 kg/m³ and ≤ 2500 kg/m³', 'C');
+        const waterDensityValue = parseDec($('#waterDensityVal'), { 
+          min: VALIDATION_LIMITS.NUMERIC_MIN, 
+          max: VALIDATION_LIMITS.WATER_DENSITY_MAX, 
+          label: 'Water Density' 
+        }).value;
+        const waterDensitySI = U.density[$('#waterDensityUnit').value].toSI(waterDensityValue);
+        const waterDensityOK = waterDensitySI >= VALIDATION_LIMITS.WATER_DENSITY_MIN && waterDensitySI <= VALIDATION_LIMITS.WATER_DENSITY_MAX;
+        markInvalid($('#waterDensityVal'), waterDensityOK, waterDensityOK ? '' : `Water density must be ≥ ${VALIDATION_LIMITS.WATER_DENSITY_MIN} kg/m³ and ≤ ${VALIDATION_LIMITS.WATER_DENSITY_MAX} kg/m³`, 'C');
 
-        const waterConcV = parseDec($('#waterConc'), { min: 0, label: 'Water Conc' }).value;
-        const waterConcLpm3 = U.conc_liq[$('#waterConcUnit').value].toBaseLpm3(waterConcV);
-        const wvsOK = waterConcLpm3 <= mixFluid_Lpm3;
-        markInvalid($('#waterConc'), wvsOK, wvsOK ? '' : 'Water Conc must not exceed Mix Fluid Conc', 'C');
+        const waterConcValue = parseDec($('#waterConc'), { min: VALIDATION_LIMITS.NUMERIC_MIN, label: 'Water Conc' }).value;
+        const waterConc_Lpm3 = U.conc_liq[$('#waterConcUnit').value].toBaseLpm3(waterConcValue);
+        const waterVsFluidOK = waterConc_Lpm3 <= mixFluidConc_Lpm3;
+        markInvalid($('#waterConc'), waterVsFluidOK, waterVsFluidOK ? '' : 'Water Conc must not exceed Mix Fluid Conc', 'C');
 
         // ---- Pit & Field (D) ----
-        const cap = parseDec($('#pitCapacityVal'), { min: 0, label: 'Pit Capacity' }).value;
-        const cap_m3 = U.volume[$('#pitCapacityUnit').value].toSI(cap);
-        const dead = parseDec($('#pitDeadVal'), { min: 0, label: 'Pit Dead Volume' }).value;
-        const dead_m3 = U.volume[$('#pitDeadUnit').value].toSI(dead);
-        const deadOK = dead_m3 <= cap_m3;
-        markInvalid($('#pitDeadVal'), deadOK, deadOK ? '' : 'Pit Dead Volume must be ≤ Pit Capacity', 'D');
+        const pitCapacityValue = parseDec($('#pitCapacityVal'), { min: VALIDATION_LIMITS.NUMERIC_MIN, label: 'Pit Capacity' }).value;
+        const pitCapacity_m3 = U.volume[$('#pitCapacityUnit').value].toSI(pitCapacityValue);
+        const pitDeadValue = parseDec($('#pitDeadVal'), { min: VALIDATION_LIMITS.NUMERIC_MIN, label: 'Pit Dead Volume' }).value;
+        const pitDead_m3 = U.volume[$('#pitDeadUnit').value].toSI(pitDeadValue);
+        const pitDeadOK = pitDead_m3 <= pitCapacity_m3;
+        markInvalid($('#pitDeadVal'), pitDeadOK, pitDeadOK ? '' : 'Pit Dead Volume must be ≤ Pit Capacity', 'D');
 
-        const pump = parseDec($('#pumpableVal'), { min: 0, label: 'Pumpable Volume' }).value;
-        const pump_m3 = U.volume[$('#pumpableUnit').value].toSI(pump);
-        const pumpOK = pump_m3 <= Math.max(cap_m3 - dead_m3, 0);
-        markInvalid($('#pumpableVal'), pumpOK, pumpOK ? '' : 'Pumpable must be ≤ (Capacity - Dead)', 'D');
+        const pumpableValue = parseDec($('#pumpableVal'), { min: VALIDATION_LIMITS.NUMERIC_MIN, label: 'Pumpable Volume' }).value;
+        const pumpable_m3 = U.volume[$('#pumpableUnit').value].toSI(pumpableValue);
+        const pumpableOK = pumpable_m3 <= Math.max(pitCapacity_m3 - pitDead_m3, 0);
+        markInvalid($('#pumpableVal'), pumpableOK, pumpableOK ? '' : 'Pumpable must be ≤ (Capacity - Dead)', 'D');
 
         // ---- Chemicals (B) ----
         const codes = [], names = [], lots = [];
