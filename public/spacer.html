@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -21,6 +20,23 @@
       border: 0;
       padding: 0;
       margin: -1px
+    }
+
+    /* Required field indicator */
+    .required::after {
+      content: " *";
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
+    .required-note {
+      font-size: 0.9em;
+      color: #666;
+      font-style: italic;
+      margin: 10px 0;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border-left: 3px solid #d32f2f;
     }
 
     table {
@@ -132,6 +148,34 @@
     .invalid {
       outline: 2px solid #e11;
       background: #ffecec
+    }
+
+    /* Success feedback */
+    .success-banner {
+      display: none;
+      padding: 12px 16px;
+      margin: 16px 0;
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      border-radius: 6px;
+      color: #155724;
+      font-weight: 500;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .success-banner.show {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* input width normalization */
@@ -260,9 +304,9 @@
             </td>
           </tr>
           <tr>
-            <th><label for="mixFluidConc">Mix Fluid Concentration</label></th>
+            <th><label for="mixFluidConc" class="required">Mix Fluid Concentration</label></th>
             <td>
-              <input type="number" id="mixFluidConc" class="w-num" step="0.001" placeholder="0" />
+              <input type="number" id="mixFluidConc" class="w-num" step="0.001" placeholder="0" required aria-required="true" />
               <select id="mixFluidConcUnit" class="unit" aria-label="Mix fluid concentration unit">
                 <option value="l_m3" selected>L/m³</option>
                 <option value="gal_bbl">gal/bbl</option>
@@ -292,17 +336,19 @@
           </tr>
         </table>
 
+        <div class="required-note">* Required field</div>
+
         <!-- ===== B. Fluid Chemical Details (dynamic) ===== -->
         <table id="tableB" border="1" cellspacing="0" cellpadding="6">
           <caption>Fluid Chemical Details</caption>
           <thead>
             <tr>
               <th class="ctrlCol" aria-label="Row controls"></th>
-              <th>Chemical Code</th>
+              <th>Chemical Code<span style="color:#d32f2f;font-size:0.85em;"> *</span></th>
               <th>Chemical Name</th>
-              <th id="colPhase">Phase</th>
-              <th>Concentration</th>
-              <th id="colUnitB">Unit</th>
+              <th id="colPhase">Phase<span style="color:#d32f2f;font-size:0.85em;"> *</span></th>
+              <th>Concentration<span style="color:#d32f2f;font-size:0.85em;"> *</span></th>
+              <th id="colUnitB">Unit<span style="color:#d32f2f;font-size:0.85em;"> *</span></th>
               <th>LOT Number</th>
             </tr>
           </thead>
@@ -334,6 +380,10 @@
           </tbody>
         </table>
 
+        <div class="required-note" style="font-size: 0.85em;">
+          * Required when row is created (contains any data)
+        </div>
+
         <!-- inline errors right below the Chemicals table -->
         <div id="errorsChemInline" class="err-inline" aria-live="polite"></div>
 
@@ -358,9 +408,9 @@
             </td>
           </tr>
           <tr>
-            <th><label for="waterConc">Water Concentration</label></th>
+            <th><label for="waterConc" class="required">Water Concentration</label></th>
             <td>
-              <input type="number" id="waterConc" class="w-num" step="0.001" placeholder="0" />
+              <input type="number" id="waterConc" class="w-num" step="0.001" placeholder="0" required aria-required="true" />
               <select id="waterConcUnit" class="unit" aria-label="Water concentration unit">
                 <option value="l_m3" selected>L/m³</option>
                 <option value="gal_bbl">gal/bbl</option>
@@ -410,9 +460,9 @@
         <table id="tableE" border="1" cellspacing="0" cellpadding="6">
           <caption>Field Mixing</caption>
           <tr>
-            <th><label for="pumpableVal">Pumpable Volume</label></th>
+            <th><label for="pumpableVal" class="required">Pumpable Volume</label></th>
             <td>
-              <input type="number" id="pumpableVal" class="w-num" step="0.001" placeholder="9.5" />
+              <input type="number" id="pumpableVal" class="w-num" step="0.001" placeholder="9.5" required aria-required="true" />
               <select id="pumpableUnit" class="unit" aria-label="Pumpable unit">
                 <option value="m3" selected>m³</option>
                 <option value="bbl">bbl</option>
@@ -442,9 +492,12 @@
           <caption>Field Quantities of Water &amp; Chemicals</caption>
         </table>
 
-        <div>
-          <label for="outDp">Output decimals:</label>
-          <select id="outDp" class="unit" style="width:6ch">
+        <div style="margin: 16px 0; padding: 12px; background: #f8f9fa; border-radius: 6px;">
+          <label for="outDp" style="font-weight: 500;">
+            <span role="img" aria-label="Settings">⚙️</span> 
+            Output decimal places (affects all calculated values):
+          </label>
+          <select id="outDp" class="unit" style="width:6ch; margin-left: 8px;">
             <option value="0">0</option>
             <option value="1">1</option>
             <option value="2" selected>2</option>
@@ -453,13 +506,21 @@
           </select>
         </div>
 
+        <!-- Success feedback banner -->
+        <div id="successBanner" class="success-banner" role="status" aria-live="polite">
+          ✓ Calculations complete! All field quantities updated.
+        </div>
+
         <div id="kpiList"></div>
       </form>
     </div>
 
     <!-- sticky right-side error panel -->
     <aside id="errorsPanel" class="errors-panel" aria-live="polite">
-      <h3>Validation</h3>
+      <h3>Validation Status</h3>
+      <p style="margin: 0 0 12px; font-size: 0.85em; color: #666;">
+        Real-time validation of your inputs. Errors shown in red, valid sections in green.
+      </p>
 
       <section class="err-section" data-sec="A">
         <h4>Fluid Properties</h4>
@@ -613,6 +674,7 @@
                 row.querySelector('[id^="chemUnit"]')
               );
             }
+            updateChemicalRowRequirements(tr);
             compute(); validateAll();
           });
 
@@ -630,6 +692,7 @@
                 ? window._lastUnitSolid
                 : window._lastUnitLiquid;
             }
+            updateChemicalRowRequirements(tr);
             compute(); validateAll();
           });
 
@@ -648,6 +711,37 @@
           });
           lot._enterHooked = true;
         }
+      }
+      
+      // Check if any field in a chemical row has data
+      function updateChemicalRowRequirements(tr) {
+        const code = tr.querySelector('[id^="chemCode"]');
+        const name = tr.querySelector('[id^="chemName"]');
+        const phase = tr.querySelector('[id^="chemPhase"]');
+        const conc = tr.querySelector('[id^="chemConc"]');
+        const unit = tr.querySelector('[id^="chemUnit"]');
+        const lot = tr.querySelector('[id^="chemLot"]');
+        
+        // Check if any field has data (excluding phase and unit which have defaults)
+        const hasData = (code?.value || '').trim() !== '' || 
+                       (name?.value || '').trim() !== '' || 
+                       (conc?.value || '').trim() !== '' || 
+                       (lot?.value || '').trim() !== '';
+        
+        // Make Code, Phase, Concentration, Unit required if row has any data
+        const requiredFields = [code, phase, conc, unit];
+        
+        requiredFields.forEach((el) => {
+          if (el) {
+            if (hasData) {
+              el.setAttribute('required', 'required');
+              el.setAttribute('aria-required', 'true');
+            } else {
+              el.removeAttribute('required');
+              el.removeAttribute('aria-required');
+            }
+          }
+        });
       }
       reindex();
     })();
@@ -719,6 +813,31 @@
           addKPI(`${name || 'Chemical'} (${code || '-'})`, qty_kg, 'solid');
         }
       });
+
+      // Show success feedback if there are valid calculations
+      showSuccessFeedback();
+    }
+
+    /* ===== Success feedback ===== */
+    let successTimeout;
+    function showSuccessFeedback() {
+      const banner = $('#successBanner');
+      if (!banner) return;
+
+      // Check if we have meaningful data
+      const hasData = $('#pumpableVal').value || $('#pitCapacityVal').value;
+      if (!hasData) return;
+
+      // Clear any existing timeout
+      clearTimeout(successTimeout);
+
+      // Show the banner
+      banner.classList.add('show');
+
+      // Hide after 3 seconds
+      successTimeout = setTimeout(() => {
+        banner.classList.remove('show');
+      }, 3000);
     }
 
     /* ===== Validation (sectioned, visible) ===== */
@@ -738,6 +857,29 @@
         document.querySelectorAll('.err-section').forEach(sec => {
           const ul = sec.querySelector('ul'); sec.style.display = (ul && ul.children.length) ? '' : 'none';
         });
+      }
+
+      function updateValidationStatus() {
+        // Check if there are any errors
+        const hasErrors = Array.from(Object.values(ERR_BUCKETS)).some(ul => ul && ul.children.length > 0);
+        const panel = document.getElementById('errorsPanel');
+        
+        if (!hasErrors && panel) {
+          // Show "all valid" message in each section
+          Object.entries(ERR_BUCKETS).forEach(([key, ul]) => {
+            if (ul && ul.children.length === 0) {
+              const li = document.createElement('li');
+              li.textContent = '✓ All valid';
+              li.style.color = '#28a745';
+              li.style.fontWeight = '500';
+              ul.appendChild(li);
+            }
+          });
+          // Show all sections when everything is valid
+          document.querySelectorAll('.err-section').forEach(sec => {
+            sec.style.display = '';
+          });
+        }
       }
 
       function pushMsg(secKey, text, { alsoInlineChem = false } = {}) {
@@ -880,12 +1022,59 @@
         $$('#tableB tbody tr').forEach(tr => {
           const codeEl = tr.querySelector('[id^="chemCode"]');
           const nameEl = tr.querySelector('[id^="chemName"]');
+          const phaseEl = tr.querySelector('[id^="chemPhase"]');
+          const concEl = tr.querySelector('[id^="chemConc"]');
+          const unitEl = tr.querySelector('[id^="chemUnit"]');
           const lotEl = tr.querySelector('[id^="chemLot"]');
 
-          [codeEl, nameEl, lotEl].forEach(el => {
+          // Check if row has any data
+          const hasData = (codeEl?.value || '').trim() !== '' || 
+                         (nameEl?.value || '').trim() !== '' || 
+                         (concEl?.value || '').trim() !== '' || 
+                         (lotEl?.value || '').trim() !== '';
+
+          // If row has data, validate required fields (Code, Phase, Concentration, Unit)
+          if (hasData) {
+            // Validate Code
+            const codeVal = (codeEl?.value || '').trim();
+            if (codeVal === '') {
+              markInvalid(codeEl, false, 'Chemical Code is required when row has data', 'B', true);
+            } else {
+              const codeOk = /^[\x20-\x7E]*$/.test(codeVal);
+              markInvalid(codeEl, codeOk, codeOk ? '' : 'Only ASCII printable characters allowed', 'B', true);
+            }
+
+            // Validate Concentration
+            const concVal = (concEl?.value || '').trim();
+            if (concVal === '') {
+              markInvalid(concEl, false, 'Concentration is required when row has data', 'B', true);
+            } else {
+              markInvalid(concEl, true, '', 'B', false);
+            }
+
+            // Phase is always valid (has default value)
+            markInvalid(phaseEl, true, '', 'B', false);
+            
+            // Unit is always valid (has default value)
+            markInvalid(unitEl, true, '', 'B', false);
+          } else {
+            // Row is empty, no validation needed
+            markInvalid(codeEl, true, '', 'B', false);
+            markInvalid(concEl, true, '', 'B', false);
+            markInvalid(phaseEl, true, '', 'B', false);
+            markInvalid(unitEl, true, '', 'B', false);
+          }
+
+          // Validate Name and LOT for ASCII only (regardless of whether row has data)
+          [nameEl, lotEl].forEach(el => {
             if (!el) return;
-            const ok = /^[\x20-\x7E]*$/.test(el.value || '');
-            markInvalid(el, ok, ok ? '' : 'Only ASCII printable characters allowed', 'B', true);
+            const val = el.value || '';
+            if (val.trim() !== '') {
+              const ok = /^[\x20-\x7E]*$/.test(val);
+              markInvalid(el, ok, ok ? '' : 'Only ASCII printable characters allowed', 'B', true);
+            } else {
+              markInvalid(el, true, '', 'B', false);
+            }
           });
 
           const norm = s => (s || '').trim().toLowerCase();
@@ -914,6 +1103,9 @@
         document.querySelectorAll('.err-section').forEach(sec => {
           const ul = sec.querySelector('ul'); sec.style.display = (ul && ul.children.length) ? '' : 'none';
         });
+
+        // Update validation status indicators
+        updateValidationStatus();
       }
 
       // wire - use capturing phase and check for duplicates
